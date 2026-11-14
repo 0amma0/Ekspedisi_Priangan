@@ -16,12 +16,21 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
 
 // Admin 
 Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/pelanggan/create', [PelangganController::class, 'create']);
+    Route::post('/pelanggan', [PelangganController::class, 'store']);
+    Route::get('/pelanggan/{pelanggan}/edit', [PelangganController::class, 'edit']);
+    Route::put('/pelanggan/{pelanggan}', [PelangganController::class, 'update']);
+    Route::get('/kurir/create', [KurirController::class, 'create']);
+    Route::post('/kurir', [KurirController::class, 'store']);
+    Route::post('/kurir/{kurir}/nonaktif', [KurirController::class, 'nonaktif']);
+    Route::post('/kurir/{kurir}/aktif', [KurirController::class, 'aktif']);
+    Route::post('/kurir/{kurir}/reset', [KurirController::class, 'reset']);
 });
 
 // Admin dan Manajer (hanya melihat) 
-Route::middleware(['auth', 'role:admin,manajer'])->group(function () {
-});
+Route::middleware(['auth', 'role:admin,manajer'])->group(function () {});
+Route::get('/pelanggan', [PelangganController::class, 'index']);
+Route::get('/kurir', [KurirController::class, 'index']);
 
 // Manajer 
-Route::middleware(['auth', 'role:manajer'])->group(function () {
-});
+Route::middleware(['auth', 'role:manajer'])->group(function () {});
