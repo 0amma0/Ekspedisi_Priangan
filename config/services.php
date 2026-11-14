@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'pusat_wilayah' => [
+        'url' => env('PUSAT_WILAYAH_URL'),
+        'key' => env('PUSAT_WILAYAH_KEY'),
+    ],
+
 ];
