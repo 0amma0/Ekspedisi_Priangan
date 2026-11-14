@@ -31,6 +31,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 Route::middleware(['auth', 'role:admin,manajer'])->group(function () {});
 Route::get('/pelanggan', [PelangganController::class, 'index']);
 Route::get('/kurir', [KurirController::class, 'index']);
+Route::get('/tarif', [TarifController::class, 'index']);
 
 // Manajer 
 Route::middleware(['auth', 'role:manajer'])->group(function () {});
+Route::post('/tarif/{zone}', [TarifController::class, 'update']);
