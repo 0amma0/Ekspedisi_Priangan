@@ -15,6 +15,7 @@ Route::get('/cek-resi', [CekResiController::class, 'index']);
 Route::get('/login', [AuthController::class, 'form'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
+Route::get('/cek-resi', [CekResiController::class, 'index'])->middleware('throttle:30,1');
 
 // Grup Khusus Admin 
 Route::middleware(['auth', 'role:admin'])->group(function () {
