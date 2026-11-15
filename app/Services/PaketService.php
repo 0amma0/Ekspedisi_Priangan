@@ -1,6 +1,7 @@
 <?php
+
 namespace App\Services;
- 
+
 use App\Models\Courier;
 use App\Models\Package;
 use App\Models\PackageHistory;
@@ -8,10 +9,18 @@ use App\Models\User;
 use App\Models\ZoneRate;
 use App\Support\Telepon;
 use Illuminate\Support\Facades\DB;
- 
+
 class PaketService
 {
-    
+    private const TRANSISI = [
+        'Diterima'    => ['Transit'],
+        'Transit'     => ['Dikirim'],
+        'Dikirim'     => ['Terkirim', 'Gagal Kirim'],
+        'Gagal Kirim' => ['Dikirim', 'Retur'],
+        'Terkirim'    => [],
+        'Retur'       => [],
+    ];
+
     public function nomorResi(): string
     {
         $hariIni = now()->toDateString();
@@ -19,32 +28,35 @@ class PaketService
         $baris = DB::table('daily_sequences')->where('sequence_date', $hariIni)->lockForUpdate()->first();
         $nomor = $baris->last_number + 1;
         DB::table('daily_sequences')->where('sequence_date', $hariIni)->update(['last_number' => $nomor]);
- 
+
         return 'PKE-' . now()->format('ymd') . '-' . str_pad($nomor, 4, '0', STR_PAD_LEFT);
     }
- 
+
+    // dibulatkan ke atas, minimal 1 kg (round dulu supaya 2.0000001 tidak jadi 3)
     public function hitungBeratTertagih(float $berat): int
     {
         return max(1, (int) ceil(round($berat, 2)));
     }
- 
+
     public function hitungOngkir(int $beratTertagih, int $tarif, string $layanan): int
     {
         $ongkir = $beratTertagih * $tarif;
         if ($layanan === 'Express') {
-            $ongkir = $ongkir * 1.5;                 
+            $ongkir = $ongkir * 1.5;
         }
         return (int) round($ongkir);
     }
- 
+
+    // 2% dari nilai COD, minimal Rp2.000 (0 bila bukan COD)
     public function hitungBiayaCod(int $nilaiCod): int
     {
         return $nilaiCod > 0 ? max(2000, (int) round($nilaiCod * 0.02)) : 0;
     }
- 
+
     public function buat(array $data, User $admin): Package
     {
         return DB::transaction(function () use ($data, $admin) {
+            // zona: pilihan manual Admin, atau dari layanan Pusat Wilayah
             $manual = !empty($data['zona_manual']);
             $zonaId = $manual
                 ? (int) $data['zona_manual']
@@ -52,12 +64,12 @@ class PaketService
             if (!$zonaId) {
                 throw new PaketDitolak('Zona tidak dapat ditentukan. Pilih zona secara manual.');
             }
- 
+
             $tarif = ZoneRate::where('zone_id', $zonaId)->value('price_per_kg');
             $berat = (float) $data['weight_kg'];
             $tertagih = $this->hitungBeratTertagih($berat);
             $nilaiCod = $data['is_cod'] ? (int) $data['cod_amount'] : 0;
- 
+
             $paket = Package::create([
                 'tracking_number' => $this->nomorResi(),
                 'received_date' => now()->toDateString(),
@@ -80,19 +92,95 @@ class PaketService
                 'status' => 'Diterima',
                 'created_by_user_id' => $admin->id,
             ]);
- 
+
             $this->catat($paket, null, 'Diterima', $admin->id, 'Admin', null, 'Paket diterima di loket');
             return $paket;
         });
     }
- 
+
+    // satu baris riwayat tiap perubahan status
     private function catat(Package $paket, ?string $dari, string $ke, ?int $userId, string $peran, ?int $kurirId, ?string $catatan): void
     {
         PackageHistory::create([
-            'package_id' => $paket->id, 'from_status' => $dari, 'to_status' => $ke,
-            'actor_user_id' => $userId, 'actor_role' => $peran,
-            'courier_id' => $kurirId, 'notes' => $catatan,
+            'package_id' => $paket->id,
+            'from_status' => $dari,
+            'to_status' => $ke,
+            'actor_user_id' => $userId,
+            'actor_role' => $peran,
+            'courier_id' => $kurirId,
+            'notes' => $catatan,
         ]);
     }
- 
+
+    // satu-satunya tempat status berubah
+    public function ubahStatus(Package $paket, string $baru, ?int $userId, string $peran, ?string $catatan = null, ?int $kurirId = null): void
+    {
+        DB::transaction(function () use ($paket, $baru, $userId, $peran, $catatan, $kurirId) {
+            $p = Package::lockForUpdate()->find($paket->id);
+            $lama = $p->status;
+
+            if (in_array($lama, ['Terkirim', 'Retur'])) {
+                throw new PaketDitolak("Paket berstatus $lama sudah final dan tidak dapat diubah.");
+            }
+            if (!in_array($baru, self::TRANSISI[$lama])) {
+                throw new PaketDitolak('Status tidak boleh loncat. Urutan: Diterima, Transit, Dikirim, Terkirim.');
+            }
+            if ($lama === 'Gagal Kirim' && $baru === 'Dikirim' && $p->failed_attempts >= 2) {
+                throw new PaketDitolak('Paket sudah gagal 2 kali. Kirim ulang ditolak, ubah status menjadi Retur.');
+            }
+            if ($lama === 'Gagal Kirim' && $baru === 'Retur' && $p->failed_attempts < 2) {
+                throw new PaketDitolak('Retur hanya boleh setelah 2 kali gagal kirim.');
+            }
+            if ($baru === 'Gagal Kirim') {
+                if (!$catatan) {
+                    throw new PaketDitolak('Catatan wajib diisi untuk Gagal Kirim.');
+                }
+                $p->failed_attempts = $p->failed_attempts + 1;
+            }
+
+            $p->status = $baru;
+            if ($kurirId) {
+                $p->courier_id = $kurirId;
+            }
+            $p->save();
+            $this->catat($p, $lama, $baru, $userId, $peran, $p->courier_id, $catatan);
+        });
+    }
+
+    public function keTransit(Package $paket, User $admin): void
+    {
+        $this->ubahStatus($paket, 'Transit', $admin->id, 'Admin');
+    }
+
+    // penugasan (juga untuk kirim ulang dari Gagal Kirim)
+    public function tugaskan(Package $paket, Courier $kurir, User $admin): void
+    {
+        DB::transaction(function () use ($paket, $kurir, $admin) {
+            // kunci baris kurir supaya dua penugasan bersamaan tidak sama-sama lolos
+            $k = Courier::lockForUpdate()->find($kurir->id);
+            if (!$k->is_active) {
+                throw new PaketDitolak('Kurir nonaktif tidak dapat ditugaskan paket.');
+            }
+            $dibawa = Package::where('courier_id', $k->id)->where('status', 'Dikirim')->count();
+            if ($dibawa >= $k->max_packages) {
+                throw new PaketDitolak('Kurir sudah membawa ' . $k->max_packages . ' paket berstatus Dikirim.');
+            }
+            // catatan sengaja kosong: catatan riwayat tampil ke publik
+            $this->ubahStatus($paket, 'Dikirim', $admin->id, 'Admin', null, $k->id);
+        });
+    }
+
+    public function retur(Package $paket, User $admin, ?string $catatan = null): void
+    {
+        $this->ubahStatus($paket, 'Retur', $admin->id, 'Admin', $catatan);
+    }
+
+    // dipanggil API kurir: hasil = Terkirim atau Gagal Kirim
+    public function laporkanHasil(Package $paket, Courier $kurir, string $hasil, ?string $catatan): void
+    {
+        if (!in_array($hasil, ['Terkirim', 'Gagal Kirim'])) {
+            throw new PaketDitolak('Hasil harus Terkirim atau Gagal Kirim.');
+        }
+        $this->ubahStatus($paket, $hasil, $kurir->user_id, 'Kurir', $catatan, $kurir->id);
+    }
 }

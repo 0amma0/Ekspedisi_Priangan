@@ -59,4 +59,31 @@ class PaketController extends Controller
         $paket->load(['customer', 'courier', 'zone', 'histories']);
         return view('paket.show', compact('paket'));
     }
+    public function transit(Package $paket, PaketService $svc, Request $r)
+    {
+        return $this->jalankan(fn() => $svc->keTransit($paket, $r->user()), 'Paket dipindah ke Transit.');
+    }
+
+    public function tugaskan(Package $paket, PaketService $svc, Request $r)
+    {
+        $r->validate(['courier_id' => 'required|exists:couriers,id']);
+        $kurir = Courier::find($r->courier_id);
+        return $this->jalankan(fn() => $svc->tugaskan($paket, $kurir, $r->user()), 'Paket ditugaskan ke kurir.');
+    }
+
+    public function retur(Package $paket, PaketService $svc, Request $r)
+    {
+        return $this->jalankan(fn() => $svc->retur($paket, $r->user()), 'Paket diubah menjadi Retur.');
+    }
+
+    // menjalankan aksi; aturan yang ditolak tampil sebagai banner merah
+    private function jalankan(\Closure $aksi, string $pesanOk)
+    {
+        try {
+            $aksi();
+        } catch (PaketDitolak $e) {
+            return back()->with('error', $e->getMessage());
+        }
+        return back()->with('ok', $pesanOk);
+    }
 }

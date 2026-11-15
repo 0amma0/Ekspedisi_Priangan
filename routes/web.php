@@ -11,7 +11,7 @@ use App\Http\Controllers\LaporanController;
 
 // Halaman Publik & Auth
 Route::get('/', fn() => redirect('/cek-resi'));
-Route::get('/cek-resi', [CekResiController::class, 'index']); 
+Route::get('/cek-resi', [CekResiController::class, 'index']);
 Route::get('/login', [AuthController::class, 'form'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth');
@@ -33,6 +33,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/paket/create', [PaketController::class, 'create']);
     Route::post('/paket', [PaketController::class, 'store']);
     Route::get('/paket/{paket}', [PaketController::class, 'show']);
+    Route::post('/paket/{paket}/transit', [PaketController::class, 'transit']);
+    Route::post('/paket/{paket}/tugaskan', [PaketController::class, 'tugaskan']);
+    Route::post('/paket/{paket}/retur', [PaketController::class, 'retur']);
 });
 
 // Grup Admin dan Manajer (hanya melihat) 
