@@ -1,0 +1,69 @@
+<ion-content class="ion-padding">
+  <ion-item *ngIf="info" color="warning">
+    <ion-label class="ion-text-wrap">{{ info }}</ion-label>
+  </ion-item>
+
+  <div *ngIf="token && halaman !== 'ganti'">
+    <ion-button size="small" (click)="pindah('paket')">Paket</ion-button>
+    <ion-button size="small" (click)="pindah('cod')">COD</ion-button>
+    <ion-button size="small" (click)="pindah('akun')">Akun</ion-button>
+  </div>
+
+  <div *ngIf="halaman === 'login'">
+    <ion-input [(ngModel)]="akun" label="Kode kurir" label-placement="floating" placeholder="KUR-01"></ion-input>
+    <ion-input [(ngModel)]="password" type="password" label="Password" label-placement="floating"></ion-input>
+    <ion-input [(ngModel)]="base" label="Alamat server" label-placement="floating"></ion-input>
+    <ion-button expand="block" (click)="masuk()">Masuk</ion-button>
+  </div>
+
+  <div *ngIf="halaman === 'ganti'">
+    <h3>Anda wajib mengganti password</h3>
+    <ion-input [(ngModel)]="lama" type="password" label="Password lama" label-placement="floating"></ion-input>
+    <ion-input [(ngModel)]="baru" type="password" label="Password baru (min 8)" label-placement="floating"></ion-input>
+    <ion-input [(ngModel)]="konfirmasi" type="password" label="Ulangi password baru" label-placement="floating"></ion-input>
+    <ion-button expand="block" (click)="ganti()">Simpan</ion-button>
+  </div>
+
+  <div *ngIf="halaman === 'paket'">
+    <h3>Paket yang harus dikirim ({{ paket.length }})</h3>
+    <ion-button size="small" fill="outline" (click)="muatPaket()">Segarkan</ion-button>
+    <ion-list>
+      <ion-item *ngFor="let p of paket" (click)="buka(p)" button>
+        <ion-label class="ion-text-wrap">
+          <h2>{{ p.resi }}</h2>
+          <p>{{ p.penerima }} - {{ p.kota }}</p>
+          <p>{{ p.alamat }}</p>
+        </ion-label>
+        <ion-badge *ngIf="p.cod" color="danger">COD</ion-badge>
+      </ion-item>
+    </ion-list>
+    <p *ngIf="paket.length === 0">Tidak ada paket Dikirim.</p>
+  </div>
+
+  <div *ngIf="halaman === 'detail' && dipilih">
+    <h3>{{ dipilih.resi }}</h3>
+    <p>{{ dipilih.penerima }} ({{ dipilih.telepon }})</p>
+    <p>{{ dipilih.alamat }}, {{ dipilih.kota }}</p>
+    <p *ngIf="dipilih.cod">Tagih COD: Rp {{ dipilih.nilai_cod }}</p>
+    <ion-textarea [(ngModel)]="catatan" label="Catatan (wajib bila Gagal Kirim)" label-placement="floating"></ion-textarea>
+    <ion-button expand="block" color="success" (click)="kirim('Terkirim')">Terkirim</ion-button>
+    <ion-button expand="block" color="danger" (click)="kirim('Gagal Kirim')">Gagal Kirim</ion-button>
+    <ion-button expand="block" fill="clear" (click)="pindah('paket')">Kembali</ion-button>
+  </div>
+
+  <div *ngIf="halaman === 'cod'">
+    <h3>COD belum disetor: Rp {{ cod.total_belum_disetor }}</h3>
+    <ion-list>
+      <ion-item *ngFor="let p of cod.paket">
+        <ion-label>{{ p.resi }} - Rp {{ p.nilai_cod }}</ion-label>
+        <ion-badge [color]="p.disetor ? 'success' : 'warning'">{{ p.disetor ? 'Disetor' : 'Belum' }}</ion-badge>
+      </ion-item>
+    </ion-list>
+    <p *ngIf="cod.paket.length === 0">Belum ada COD terkirim.</p>
+  </div>
+
+  <div *ngIf="halaman === 'akun'">
+    <ion-button expand="block" (click)="halaman = 'ganti'">Ganti password</ion-button>
+    <ion-button expand="block" color="medium" (click)="keluar()">Keluar</ion-button>
+  </div>
+</ion-content>

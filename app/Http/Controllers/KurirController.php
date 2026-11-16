@@ -70,4 +70,9 @@ class KurirController extends Controller
         $kurir->user->update(['password' => $r->password, 'must_change_password' => true]);
         return back()->with('ok', 'Password direset. Kurir wajib menggantinya saat login.');
     }
+    public function edit($id)
+    {
+        $kurir = Courier::findOrFail($id);
+        return view('kurir.form', compact('kurir'));
+    }
 }

@@ -86,4 +86,14 @@ class PaketController extends Controller
         }
         return back()->with('ok', $pesanOk);
     }
+    public function cod()
+    {
+        $pakets = Package::with('courier')->where('is_cod', true)->where('status', 'Terkirim')->latest('id')->get();
+        return view('cod', compact('pakets'));
+    }
+
+    public function setoran(Package $paket, PaketService $svc, Request $r)
+    {
+        return $this->jalankan(fn() => $svc->catatSetoran($paket, $r->user()), 'Setoran COD dicatat.');
+    }
 }

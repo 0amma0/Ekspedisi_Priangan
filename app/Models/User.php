@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Models;
-
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -12,9 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
-    //add HasApiTokens and php artisan install:api
-
+    use HasApiTokens, HasFactory, Notifiable;
     
     protected $fillable = [
         'name',

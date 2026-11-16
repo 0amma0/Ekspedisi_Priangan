@@ -183,4 +183,20 @@ class PaketService
         }
         $this->ubahStatus($paket, $hasil, $kurir->user_id, 'Kurir', $catatan, $kurir->id);
     }
+
+    public function catatSetoran(Package $paket, User $admin): void
+    {
+        DB::transaction(function () use ($paket, $admin) {
+            $p = Package::lockForUpdate()->find($paket->id);
+
+            // Pastikan hanya paket COD status Terkirim yang bisa disetor
+            if (!$p->is_cod || $p->status !== 'Terkirim') {
+                throw new PaketDitolak('Hanya paket COD dengan status Terkirim yang dapat disetor.');
+            }
+
+            // Tandai atau catat bahwa setoran sudah dilakukan (sesuaikan kolom tabel jika ada, misal: is_cod_paid / status setoran)
+            // Contoh pencatatan riwayat:
+            $this->catat($p, $p->status, $p->status, $admin->id, 'Admin', $p->courier_id, 'Setoran COD dicatat');
+        });
+    }
 }

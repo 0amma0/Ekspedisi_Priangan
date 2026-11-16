@@ -37,6 +37,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/paket/{paket}/transit', [PaketController::class, 'transit']);
     Route::post('/paket/{paket}/tugaskan', [PaketController::class, 'tugaskan']);
     Route::post('/paket/{paket}/retur', [PaketController::class, 'retur']);
+    Route::get('/cod', [PaketController::class, 'cod']);
+    Route::post('/paket/{paket}/setoran', [PaketController::class, 'setoran']);
+    Route::get('/kurir/{id}/edit', [KurirController::class, 'edit']);
 });
 
 // Grup Admin dan Manajer (hanya melihat) 
@@ -44,9 +47,16 @@ Route::middleware(['auth', 'role:admin,manajer'])->group(function () {
     Route::get('/pelanggan', [PelangganController::class, 'index']);
     Route::get('/kurir', [KurirController::class, 'index']);
     Route::get('/tarif', [TarifController::class, 'index']);
+    Route::get('/akun/password', function () {
+        return view('akun.password');
+    })->name('akun.password');
+
+    Route::post('/akun/password', [AuthController::class, 'gantiPassword'])
+        ->name('akun.password.update');
 });
 
 // Grup Khusus Manajer (Mengubah Tarif) 
 Route::middleware(['auth', 'role:manajer'])->group(function () {
     Route::post('/tarif/{zone}', [TarifController::class, 'update']);
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
 });

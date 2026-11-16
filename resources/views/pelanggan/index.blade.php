@@ -19,7 +19,7 @@
                 <td>{{ $p->address }}</td>
                 <td>
                     @if (auth()->user()->role === 'admin')
-                        <a class="text-blue-700" href="{{ url('/pelanggan/' . $p->id . '/edit') }}">Ubah</a>
+                        <a class="text-blue-700" href="{{ url('/pelanggan/' . $p->id . '/edit') }}">Edit</a>
                     @endif
                 </td>
             </tr>
