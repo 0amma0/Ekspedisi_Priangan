@@ -44,19 +44,52 @@
         </tr>
     </table>
 
-    <h2 class="font-bold mt-4">Rekap COD per kurir (sampai hari ini, tidak mengikuti periode)</h2>
+    <h2 class="font-bold mt-4">
+        Rekap COD per kurir (periode {{ $dari }} sampai {{ $sampai }})
+    </h2>
+
     <table class="bg-white text-sm">
         <tr class="bg-gray-200">
             <th class="p-2">Kurir</th>
             <th class="p-2">Belum disetor</th>
             <th class="p-2">Sudah disetor</th>
+            <th class="p-2">Total COD</th>
         </tr>
+
         @foreach ($rekap as $k)
             <tr class="border-t">
-                <td class="p-2">{{ $k->code }} {{ $k->name }}</td>
-                <td class="p-2">Rp {{ number_format($k->belum, 0, ',', '.') }}</td>
-                <td class="p-2">Rp {{ number_format($k->sudah, 0, ',', '.') }}</td>
+                <td class="p-2">
+                    {{ $k->code }} {{ $k->name }}
+                </td>
+
+                <td class="p-2">
+                    Rp {{ number_format($k->belum, 0, ',', '.') }}
+                </td>
+
+                <td class="p-2">
+                    Rp {{ number_format($k->sudah, 0, ',', '.') }}
+                </td>
+
+                <td class="p-2">
+                    Rp {{ number_format($k->belum + $k->sudah, 0, ',', '.') }}
+                </td>
             </tr>
         @endforeach
+
+        <tr class="border-t font-bold bg-gray-100">
+            <td class="p-2">Total</td>
+
+            <td class="p-2">
+                Rp {{ number_format($totalBelum, 0, ',', '.') }}
+            </td>
+
+            <td class="p-2">
+                Rp {{ number_format($totalSudah, 0, ',', '.') }}
+            </td>
+
+            <td class="p-2">
+                Rp {{ number_format($totalCod, 0, ',', '.') }}
+            </td>
+        </tr>
     </table>
 @endsection
