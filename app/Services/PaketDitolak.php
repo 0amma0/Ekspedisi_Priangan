@@ -2,4 +2,6 @@
 
 namespace App\Services;
 
-class PaketDitolak extends \Exception {}
+class PaketDitolak extends \Exception {
+    
+}

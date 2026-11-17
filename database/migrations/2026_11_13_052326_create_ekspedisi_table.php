@@ -56,7 +56,7 @@ return new class extends Migration
             $t->string('recipient_name');
             $t->string('recipient_phone');
             $t->text('recipient_address');
-            $t->string('destination_city');
+            $t->string('destination_city'); //isi data zona 
             $t->foreignId('zone_id')->nullable()->constrained('zones');
             $t->boolean('is_zone_manual')->default(false);
             $t->decimal('weight_kg', 8, 2)->nullable();

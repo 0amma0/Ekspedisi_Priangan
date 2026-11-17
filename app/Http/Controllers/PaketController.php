@@ -8,11 +8,16 @@ use App\Models\Package;
 use App\Models\Zone;
 use App\Services\PaketDitolak;
 use App\Services\PaketService;
+use App\Services\ZonaService;
 use App\Support\Telepon;
 use Illuminate\Http\Request;
 
 class PaketController extends Controller
 {
+    public function __construct(
+        protected ZonaService $zonaService
+    ) {}
+
     public function index(Request $r)
     {
         $pakets = Package::with(['customer', 'courier'])
@@ -38,7 +43,7 @@ class PaketController extends Controller
             'weight_kg' => 'required|numeric|gt:0|max:1000',
             'service_type' => 'required|in:Reguler,Express',
             'cod_amount' => 'required_if:is_cod,1|nullable|integer|min:1',
-            'zona_manual' => 'nullable|in:1,2,3',
+            'zona_manual' => 'nullable|exists:zones,id',
         ], [
             'customer_id.required' => 'Pilih pelanggan pengirim.',
             'weight_kg.gt' => 'Berat harus lebih dari 0.',
@@ -76,7 +81,6 @@ class PaketController extends Controller
         return $this->jalankan(fn() => $svc->retur($paket, $r->user()), 'Paket diubah menjadi Retur.');
     }
 
-    // menjalankan aksi; aturan yang ditolak tampil sebagai banner merah
     private function jalankan(\Closure $aksi, string $pesanOk)
     {
         try {
@@ -95,5 +99,17 @@ class PaketController extends Controller
     public function setoran(Package $paket, PaketService $svc, Request $r)
     {
         return $this->jalankan(fn() => $svc->catatSetoran($paket, $r->user()), 'Setoran COD dicatat.');
+    }
+    public function cekZona(Request $request)
+    {
+        $request->validate([
+            'kota' => 'required|string|max:100',
+        ]);
+
+        $hasil = $this->zonaService->cariZona(
+            $request->query('kota')
+        );
+
+        return response()->json($hasil);
     }
 }

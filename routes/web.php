@@ -40,6 +40,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/cod', [PaketController::class, 'cod']);
     Route::post('/paket/{paket}/setoran', [PaketController::class, 'setoran']);
     Route::get('/kurir/{id}/edit', [KurirController::class, 'edit']);
+    Route::get('/zona/cek', [PaketController::class, 'cekZona'])
+        ->name('zona.cek');
 });
 
 // Grup Admin dan Manajer (hanya melihat) 
@@ -47,6 +49,7 @@ Route::middleware(['auth', 'role:admin,manajer'])->group(function () {
     Route::get('/pelanggan', [PelangganController::class, 'index']);
     Route::get('/kurir', [KurirController::class, 'index']);
     Route::get('/tarif', [TarifController::class, 'index']);
+
     Route::get('/akun/password', function () {
         return view('akun.password');
     })->name('akun.password');
@@ -55,8 +58,17 @@ Route::middleware(['auth', 'role:admin,manajer'])->group(function () {
         ->name('akun.password.update');
 });
 
+
 // Grup Khusus Manajer (Mengubah Tarif) 
 Route::middleware(['auth', 'role:manajer'])->group(function () {
     Route::post('/tarif/{zone}', [TarifController::class, 'update']);
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+});
+
+Route::get('/debug-php-ssl', function () {
+    return response()->json([
+        'php_ini' => php_ini_loaded_file(),
+        'curl_cainfo' => ini_get('curl.cainfo'),
+        'openssl_cafile' => ini_get('openssl.cafile'),
+    ]);
 });

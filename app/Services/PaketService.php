@@ -53,52 +53,95 @@ class PaketService
         return $nilaiCod > 0 ? max(2000, (int) round($nilaiCod * 0.02)) : 0;
     }
 
-    public function buat(array $data, User $admin): Package
-    {
-        return DB::transaction(function () use ($data, $admin) {
-            // zona: pilihan manual Admin, atau dari layanan Pusat Wilayah
-            $manual = !empty($data['zona_manual']);
-            $zonaId = $manual
-                ? (int) $data['zona_manual']
-                : app(PusatWilayahService::class)->cariZona($data['destination_city']);
-            if (!$zonaId) {
-                throw new PaketDitolak('Zona tidak dapat ditentukan. Pilih zona secara manual.');
+public function buat(array $data, User $admin): Package
+{
+    return DB::transaction(function () use ($data, $admin) {
+
+        $manual = filled($data['zona_manual'] ?? null);
+
+        if ($manual) {
+            $zonaId = (int) $data['zona_manual'];
+            $isManual = true;
+        } else {
+            $hasil = app(ZonaService::class)
+                ->cariZona($data['destination_city']);
+
+            if (($hasil['status'] ?? null) !== 'found') {
+                throw new PaketDitolak(
+                    'Zona belum ditemukan. Silakan pilih zona manual.'
+                );
             }
 
-            $tarif = ZoneRate::where('zone_id', $zonaId)->value('price_per_kg');
-            $berat = (float) $data['weight_kg'];
-            $tertagih = $this->hitungBeratTertagih($berat);
-            $nilaiCod = $data['is_cod'] ? (int) $data['cod_amount'] : 0;
+            $zonaId = (int) $hasil['zone_id'];
+            $isManual = false;
+        }
 
-            $paket = Package::create([
-                'tracking_number' => $this->nomorResi(),
-                'received_date' => now()->toDateString(),
-                'customer_id' => $data['customer_id'],
-                'recipient_name' => $data['recipient_name'],
-                'recipient_phone' => Telepon::rapikan($data['recipient_phone']),
-                'recipient_address' => $data['recipient_address'],
-                'destination_city' => $data['destination_city'],
-                'zone_id' => $zonaId,
-                'is_zone_manual' => $manual,
-                'weight_kg' => $berat,
-                'billable_weight' => $tertagih,
-                'service_type' => $data['service_type'],
-                // snapshot: tarif dan ongkir tersimpan di paket
-                'rate_per_kg' => $tarif,
-                'shipping_cost' => $this->hitungOngkir($tertagih, $tarif, $data['service_type']),
-                'is_cod' => $data['is_cod'],
-                'cod_amount' => $nilaiCod,
-                'cod_fee' => $this->hitungBiayaCod($nilaiCod),
-                'status' => 'Diterima',
-                'created_by_user_id' => $admin->id,
-            ]);
+        // Pastikan tarif zona tersedia
+        $tarif = ZoneRate::where('zone_id', $zonaId)
+            ->value('price_per_kg');
 
-            $this->catat($paket, null, 'Diterima', $admin->id, 'Admin', null, 'Paket diterima di loket');
-            return $paket;
-        });
-    }
+        if ($tarif === null) {
+            throw new PaketDitolak(
+                'Tarif untuk zona tersebut belum tersedia.'
+            );
+        }
 
-    // satu baris riwayat tiap perubahan status
+        $berat = (float) $data['weight_kg'];
+
+        $tertagih = $this->hitungBeratTertagih($berat);
+
+        $nilaiCod = $data['is_cod']
+            ? (int) $data['cod_amount']
+            : 0;
+
+        $paket = Package::create([
+            'tracking_number' => $this->nomorResi(),
+            'received_date' => now()->toDateString(),
+            'customer_id' => $data['customer_id'],
+            'recipient_name' => $data['recipient_name'],
+            'recipient_phone' => Telepon::rapikan(
+                $data['recipient_phone']
+            ),
+            'recipient_address' => $data['recipient_address'],
+            'destination_city' => $data['destination_city'],
+
+            'zone_id' => $zonaId,
+            'is_zone_manual' => $isManual,
+
+            'weight_kg' => $berat,
+            'billable_weight' => $tertagih,
+
+            'service_type' => $data['service_type'],
+
+            'rate_per_kg' => $tarif,
+            'shipping_cost' => $this->hitungOngkir(
+                $tertagih,
+                (int) $tarif,
+                $data['service_type']
+            ),
+
+            'is_cod' => $data['is_cod'],
+            'cod_amount' => $nilaiCod,
+            'cod_fee' => $this->hitungBiayaCod($nilaiCod),
+
+            'status' => 'Diterima',
+            'created_by_user_id' => $admin->id,
+        ]);
+
+        $this->catat(
+            $paket,
+            null,
+            'Diterima',
+            $admin->id,
+            'Admin',
+            null,
+            'Paket diterima di loket'
+        );
+
+        return $paket;
+    });
+}
+
     private function catat(Package $paket, ?string $dari, string $ke, ?int $userId, string $peran, ?int $kurirId, ?string $catatan): void
     {
         PackageHistory::create([
@@ -112,7 +155,6 @@ class PaketService
         ]);
     }
 
-    // satu-satunya tempat status berubah
     public function ubahStatus(Package $paket, string $baru, ?int $userId, string $peran, ?string $catatan = null, ?int $kurirId = null): void
     {
         DB::transaction(function () use ($paket, $baru, $userId, $peran, $catatan, $kurirId) {
@@ -175,7 +217,6 @@ class PaketService
         $this->ubahStatus($paket, 'Retur', $admin->id, 'Admin', $catatan);
     }
 
-    // dipanggil API kurir: hasil = Terkirim atau Gagal Kirim
     public function laporkanHasil(Package $paket, Courier $kurir, string $hasil, ?string $catatan): void
     {
         if (!in_array($hasil, ['Terkirim', 'Gagal Kirim'])) {
@@ -193,9 +234,6 @@ class PaketService
             if (!$p->is_cod || $p->status !== 'Terkirim') {
                 throw new PaketDitolak('Hanya paket COD dengan status Terkirim yang dapat disetor.');
             }
-
-            // Tandai atau catat bahwa setoran sudah dilakukan (sesuaikan kolom tabel jika ada, misal: is_cod_paid / status setoran)
-            // Contoh pencatatan riwayat:
             $this->catat($p, $p->status, $p->status, $admin->id, 'Admin', $p->courier_id, 'Setoran COD dicatat');
         });
     }
