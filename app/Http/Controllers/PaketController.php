@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\Courier;
 use App\Models\Customer;
 use App\Models\Package;
@@ -111,5 +112,35 @@ class PaketController extends Controller
         );
 
         return response()->json($hasil);
+    }
+    public function setoranCod(Package $paket)
+    {
+        DB::transaction(function () use ($paket) {
+
+            $baris = Package::whereKey($paket->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            abort_unless($baris->is_cod, 422, 'Paket bukan COD.');
+
+            abort_unless(
+                $baris->status === 'Terkirim',
+                422,
+                'Setoran hanya untuk paket yang sudah terkirim.'
+            );
+
+            abort_if(
+                $baris->cod_settled_at !== null,
+                422,
+                'Setoran paket ini sudah dicatat.'
+            );
+
+            $baris->update([
+                'cod_settled_at' => now(),
+                'cod_settled_by_user_id' => request()->user()->getAuthIdentifier(),
+            ]);
+        });
+
+        return back()->with('ok', 'Setoran COD berhasil dicatat.');
     }
 }

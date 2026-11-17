@@ -8,6 +8,7 @@ use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\KurirController;
 use App\Http\Controllers\TarifController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\Admin\ImportController;
 
 // Halaman Publik & Auth
 Route::get('/', fn() => redirect('/cek-resi'));
@@ -42,6 +43,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/kurir/{id}/edit', [KurirController::class, 'edit']);
     Route::get('/zona/cek', [PaketController::class, 'cekZona'])
         ->name('zona.cek');
+    Route::get('/admin/import', [ImportController::class, 'index'])
+        ->name('admin.import.index');
+
+    Route::post('/admin/import', [ImportController::class, 'store'])
+        ->name('admin.import.store');
+    Route::post('/paket/{paket}/setoran-cod',[PaketController::class, 'setoranCod']
+    );
 });
 
 // Grup Admin dan Manajer (hanya melihat) 

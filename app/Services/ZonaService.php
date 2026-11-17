@@ -6,11 +6,18 @@ use App\Models\Zone;
 use App\Models\ZoneRate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class ZonaService
 {
-    public function cariZona(string $kota): array
-    {
+    
+public function cariZona(string $kota): array
+{
+    $kota = trim($kota);
+
+    $cacheKey = 'zona_import_' . md5(strtolower($kota));
+
+    return Cache::remember($cacheKey, now()->addHours(6), function () use ($kota) {
         try {
             $url = rtrim(
                 config('services.pusat_wilayah.url', ''),
@@ -30,20 +37,15 @@ class ZonaService
             }
 
             $response = Http::acceptJson()
-                ->withHeaders([
-                    'X-API-Key' => $apiKey,
-                ])
+                ->withHeaders(['X-API-Key' => $apiKey])
                 ->connectTimeout(5)
                 ->timeout(10)
-                ->get($url . '/wilayah', [
-                    'kota' => trim($kota),
-                ]);
+                ->get($url . '/wilayah', ['kota' => $kota]);
 
             if (!$response->successful()) {
                 Log::warning('API Pusat Wilayah gagal', [
-                    'url' => $url . '/wilayah',
+                    'kota' => $kota,
                     'status' => $response->status(),
-                    'body' => $response->body(),
                 ]);
 
                 return [
@@ -56,7 +58,6 @@ class ZonaService
             }
 
             $hasil = $response->json();
-
             $zonaId = $hasil['zona'] ?? null;
 
             if (!$zonaId) {
@@ -72,10 +73,6 @@ class ZonaService
             $zona = Zone::find($zonaId);
 
             if (!$zona) {
-                Log::warning('Zona API tidak tersedia di database lokal', [
-                    'zone_id' => $zonaId,
-                ]);
-
                 return [
                     'status' => 'unavailable',
                     'zone_id' => null,
@@ -95,11 +92,10 @@ class ZonaService
                 'tariff' => $tarif,
                 'message' => 'Zona berhasil ditemukan.',
             ];
+
         } catch (\Throwable $e) {
             Log::error('Gagal menghubungi Pusat Wilayah', [
                 'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
             ]);
 
             return [
@@ -110,5 +106,7 @@ class ZonaService
                 'message' => 'Layanan Pusat Wilayah sedang tidak tersedia.',
             ];
         }
-    }
+    });
 }
+
+    }

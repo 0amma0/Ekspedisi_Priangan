@@ -22,6 +22,11 @@
             <a href="{{ url('/pelanggan') }}">Pelanggan</a>
             <a href="{{ url('/kurir') }}">Kurir</a>
             <a href="{{ url('/tarif') }}">Tarif</a>
+            @if (auth()->user()->role === 'admin')
+                <a href="{{ route('admin.import.index') }}">
+                    Import Data
+                </a>
+            @endif
             <form method="POST" action="{{ url('/logout') }}" class="ml-auto">@csrf
                 <button>Keluar ({{ auth()->user()->name }})</button>
             </form>
@@ -57,6 +62,3 @@
 </body>
 
 </html>
-
-
-

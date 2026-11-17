@@ -13,6 +13,7 @@ class Package extends Model
         'is_zone_manual' => 'boolean',
         'needs_verification' => 'boolean',
         'cod_settled_at' => 'datetime',
+        'weight_kg' => 'decimal:2',
     ];
     public function customer()
     {
