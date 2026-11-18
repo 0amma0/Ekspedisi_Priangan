@@ -45,6 +45,9 @@ class PaketController extends Controller
             'service_type' => 'required|in:Reguler,Express',
             'cod_amount' => 'required_if:is_cod,1|nullable|integer|min:1',
             'zona_manual' => 'nullable|exists:zones,id',
+            'length_cm' => 'nullable|numeric|gt:0|max:10000|required_with:width_cm,height_cm',
+            'width_cm'  => 'nullable|numeric|gt:0|max:10000|required_with:length_cm,height_cm',
+            'height_cm' => 'nullable|numeric|gt:0|max:10000|required_with:length_cm,width_cm',
         ], [
             'customer_id.required' => 'Pilih pelanggan pengirim.',
             'weight_kg.gt' => 'Berat harus lebih dari 0.',

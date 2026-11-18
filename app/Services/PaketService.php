@@ -53,94 +53,110 @@ class PaketService
         return $nilaiCod > 0 ? max(2000, (int) round($nilaiCod * 0.02)) : 0;
     }
 
-public function buat(array $data, User $admin): Package
-{
-    return DB::transaction(function () use ($data, $admin) {
+    public function buat(array $data, User $admin): Package
+    {
+        $aktual = (float) $data['weight_kg'];
+        $lengkap = filled($data['length_cm'] ?? null)
+            && filled($data['width_cm'] ?? null)
+            && filled($data['height_cm'] ?? null);
 
-        $manual = filled($data['zona_manual'] ?? null);
+        $volumetrik = null;
+        $beratDasar = $aktual;
+        if ($lengkap) {
+            $volumetrik = (
+                (float) $data['length_cm'] *
+                (float) $data['width_cm'] *
+                (float) $data['height_cm']
+            ) / 6000;
+            $beratDasar = max($aktual, $volumetrik);
+        }
+        $beratTertagih = max(1, ceil(round($beratDasar, 2)));
+        return DB::transaction(function () use ($data, $admin) {
 
-        if ($manual) {
-            $zonaId = (int) $data['zona_manual'];
-            $isManual = true;
-        } else {
-            $hasil = app(ZonaService::class)
-                ->cariZona($data['destination_city']);
+            $manual = filled($data['zona_manual'] ?? null);
 
-            if (($hasil['status'] ?? null) !== 'found') {
+            if ($manual) {
+                $zonaId = (int) $data['zona_manual'];
+                $isManual = true;
+            } else {
+                $hasil = app(ZonaService::class)
+                    ->cariZona($data['destination_city']);
+
+                if (($hasil['status'] ?? null) !== 'found') {
+                    throw new PaketDitolak(
+                        'Zona belum ditemukan. Silakan pilih zona manual.'
+                    );
+                }
+
+                $zonaId = (int) $hasil['zone_id'];
+                $isManual = false;
+            }
+
+            // Pastikan tarif zona tersedia
+            $tarif = ZoneRate::where('zone_id', $zonaId)
+                ->value('price_per_kg');
+
+            if ($tarif === null) {
                 throw new PaketDitolak(
-                    'Zona belum ditemukan. Silakan pilih zona manual.'
+                    'Tarif untuk zona tersebut belum tersedia.'
                 );
             }
 
-            $zonaId = (int) $hasil['zone_id'];
-            $isManual = false;
-        }
+            $berat = (float) $data['weight_kg'];
 
-        // Pastikan tarif zona tersedia
-        $tarif = ZoneRate::where('zone_id', $zonaId)
-            ->value('price_per_kg');
+            $tertagih = $this->hitungBeratTertagih($berat);
 
-        if ($tarif === null) {
-            throw new PaketDitolak(
-                'Tarif untuk zona tersebut belum tersedia.'
+            $nilaiCod = $data['is_cod']
+                ? (int) $data['cod_amount']
+                : 0;
+
+            $paket = Package::create([
+                'tracking_number' => $this->nomorResi(),
+                'received_date' => now()->toDateString(),
+                'customer_id' => $data['customer_id'],
+                'recipient_name' => $data['recipient_name'],
+                'recipient_phone' => Telepon::rapikan(
+                    $data['recipient_phone']
+                ),
+                'recipient_address' => $data['recipient_address'],
+                'destination_city' => $data['destination_city'],
+
+                'zone_id' => $zonaId,
+                'is_zone_manual' => $isManual,
+
+                'weight_kg' => $berat,
+                'billable_weight' => $tertagih,
+
+                'service_type' => $data['service_type'],
+
+                'rate_per_kg' => $tarif,
+                'shipping_cost' => $this->hitungOngkir(
+                    $tertagih,
+                    (int) $tarif,
+                    $data['service_type']
+                ),
+
+                'is_cod' => $data['is_cod'],
+                'cod_amount' => $nilaiCod,
+                'cod_fee' => $this->hitungBiayaCod($nilaiCod),
+
+                'status' => 'Diterima',
+                'created_by_user_id' => $admin->id,
+            ]);
+
+            $this->catat(
+                $paket,
+                null,
+                'Diterima',
+                $admin->id,
+                'Admin',
+                null,
+                'Paket diterima di loket'
             );
-        }
 
-        $berat = (float) $data['weight_kg'];
-
-        $tertagih = $this->hitungBeratTertagih($berat);
-
-        $nilaiCod = $data['is_cod']
-            ? (int) $data['cod_amount']
-            : 0;
-
-        $paket = Package::create([
-            'tracking_number' => $this->nomorResi(),
-            'received_date' => now()->toDateString(),
-            'customer_id' => $data['customer_id'],
-            'recipient_name' => $data['recipient_name'],
-            'recipient_phone' => Telepon::rapikan(
-                $data['recipient_phone']
-            ),
-            'recipient_address' => $data['recipient_address'],
-            'destination_city' => $data['destination_city'],
-
-            'zone_id' => $zonaId,
-            'is_zone_manual' => $isManual,
-
-            'weight_kg' => $berat,
-            'billable_weight' => $tertagih,
-
-            'service_type' => $data['service_type'],
-
-            'rate_per_kg' => $tarif,
-            'shipping_cost' => $this->hitungOngkir(
-                $tertagih,
-                (int) $tarif,
-                $data['service_type']
-            ),
-
-            'is_cod' => $data['is_cod'],
-            'cod_amount' => $nilaiCod,
-            'cod_fee' => $this->hitungBiayaCod($nilaiCod),
-
-            'status' => 'Diterima',
-            'created_by_user_id' => $admin->id,
-        ]);
-
-        $this->catat(
-            $paket,
-            null,
-            'Diterima',
-            $admin->id,
-            'Admin',
-            null,
-            'Paket diterima di loket'
-        );
-
-        return $paket;
-    });
-}
+            return $paket;
+        });
+    }
 
     private function catat(Package $paket, ?string $dari, string $ke, ?int $userId, string $peran, ?int $kurirId, ?string $catatan): void
     {
