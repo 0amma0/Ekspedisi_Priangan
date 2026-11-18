@@ -1,243 +1,139 @@
-```php
 @extends('layout')
 
+@section('judul', 'Tarif per Zona - Priangan Kilat Express')
+
 @section('isi')
-    <div class="space-y-6">
 
-        {{-- HEADER --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-[#245C45]">
+            Tarif Pengiriman
+        </h1>
+        <p class="mt-1 text-sm text-[#718477]">
+            Daftar tarif pengiriman berdasarkan zona tujuan per kilogram.
+        </p>
+    </div>
+
+    <div class="overflow-hidden rounded-2xl border border-[#DCE7DD] bg-white shadow-sm">
+
+        {{-- HEADER CARD --}}
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5ECE3] bg-[#F5F7F2] px-5 py-4">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-amber-700">
-                    Administrasi Sistem
-                </p>
-                <h1 class="text-2xl font-bold text-slate-800 mt-1">Import Data</h1>
-                <p class="text-sm text-slate-500 mt-1">
-                    Kelola pemasukan data kurir, pelanggan, dan paket historis.
+                <h2 class="font-bold text-[#34443B]">
+                    Tarif per Zona
+                </h2>
+                <p class="mt-1 text-xs text-[#819487]">
+                    Harga pengiriman untuk setiap zona
                 </p>
             </div>
 
-            <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-3">
-                <i data-lucide="database" class="w-5 h-5 text-amber-700"></i>
-                <span class="text-sm font-medium text-slate-600">Data Management</span>
-            </div>
+            <span class="rounded-lg bg-[#245C45] px-3 py-2 text-xs font-semibold text-white">
+                Harga / KG
+            </span>
         </div>
 
-        {{-- NOTIFIKASI --}}
-        @if (session('success'))
-            <div class="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
-                <i data-lucide="check-circle-2" class="w-5 h-5 text-green-600 shrink-0"></i>
-                <div>
-                    <p class="font-semibold text-green-800 text-sm">Proses Import Selesai</p>
-                    <p class="text-sm text-green-700 mt-1">{{ session('success') }}</p>
-                </div>
-            </div>
-        @endif
+        {{-- TABEL --}}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
 
-        @if ($errors->any())
-            <div class="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
-                <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 shrink-0"></i>
-                <div>
-                    <p class="font-semibold text-red-800 text-sm">Import Tidak Dapat Diproses</p>
-                    <ul class="list-disc pl-5 mt-1 text-sm text-red-700">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            </div>
-        @endif
+                <thead class="bg-[#245C45] text-white">
+                    <tr>
+                        <th class="px-5 py-4 font-semibold">
+                            Zona Tujuan
+                        </th>
+                        <th class="px-5 py-4 font-semibold">
+                            Tarif Pengiriman
+                        </th>
+                        <th class="px-5 py-4 text-center font-semibold">
+                            Satuan
+                        </th>
+                    </tr>
+                </thead>
 
-        {{-- FORM IMPORT --}}
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <tbody class="divide-y divide-[#E5ECE3]">
 
-            <div class="px-6 py-5 border-b border-slate-200">
-                <div class="flex items-center gap-3">
-                    <div class="bg-amber-100 text-amber-800 p-3 rounded-xl">
-                        <i data-lucide="file-up" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="font-bold text-slate-800">Upload File Import</h2>
-                        <p class="text-xs text-slate-500 mt-1">
-                            Pilih file CSV yang akan dimasukkan ke dalam sistem.
-                        </p>
-                    </div>
-                </div>
-            </div>
+                    @foreach ($zonas as $z)
+                        <tr class="transition hover:bg-[#F5F7F2]">
 
-            <form action="{{ route('admin.import.store') }}" method="POST" enctype="multipart/form-data">
+                            {{-- NAMA ZONA --}}
+                            <td class="px-5 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F0E7] text-[#245C45]">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                                d="M12 21s7-5.5 7-12a7 7 0 1 0-14 0c0 6.5 7 12 7 12Z" />
+                                            <circle cx="12" cy="9" r="2.5" stroke-width="1.8" />
+                                        </svg>
+                                    </div>
 
-                @csrf
+                                    <span class="font-semibold text-[#34443B]">
+                                        {{ $z->name }}
+                                    </span>
+                                </div>
+                            </td>
 
-                <div class="p-6 space-y-5">
+                            {{-- TARIF --}}
+                            <td class="px-5 py-4">
+                                @if (auth()->user()->role === 'manajer')
+                                    <form method="POST" action="{{ url('/tarif/' . $z->id) }}"
+                                        class="flex flex-wrap items-center gap-2">
 
-                    {{-- KURIR --}}
-                    <div class="grid grid-cols-1 md:grid-cols-[190px_1fr] gap-3 md:items-center">
-                        <div>
-                            <label class="text-sm font-semibold text-slate-700">
-                                Data Kurir
-                            </label>
-                            <p class="text-xs text-slate-400 mt-1">Informasi akun kurir</p>
-                        </div>
+                                        @csrf
 
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <div class="relative flex-1">
-                                <input type="file" name="kurir" accept=".csv,.txt"
-                                    class="block w-full text-sm text-slate-500 border border-slate-300 rounded-xl cursor-pointer
-                                file:mr-3 file:py-3 file:px-4 file:border-0
-                                file:bg-slate-100 file:text-slate-700 file:font-semibold
-                                hover:file:bg-amber-100">
-                            </div>
-                            <span class="flex items-center gap-1.5 text-xs text-slate-400 sm:w-20">
-                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                                CSV / TXT
-                            </span>
-                        </div>
-                    </div>
+                                        <div class="relative">
+                                            <span
+                                                class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#819487]">
+                                                Rp
+                                            </span>
 
-                    <div class="border-t border-slate-100"></div>
+                                            <input type="number" name="price_per_kg" min="0" step="1"
+                                                value="{{ $tarif[$z->id] ?? 0 }}"
+                                                class="w-36 rounded-lg border border-[#DCE7DD] bg-[#FAFCF8] py-2 pl-9 pr-3 text-sm font-semibold text-[#34443B] outline-none transition focus:border-[#245C45] focus:ring-2 focus:ring-[#245C45]/10"
+                                                required>
+                                        </div>
 
-                    {{-- PELANGGAN --}}
-                    <div class="grid grid-cols-1 md:grid-cols-[190px_1fr] gap-3 md:items-center">
-                        <div>
-                            <label class="text-sm font-semibold text-slate-700">
-                                Data Pelanggan
-                            </label>
-                            <p class="text-xs text-slate-400 mt-1">Informasi pelanggan</p>
-                        </div>
+                                        <button type="submit"
+                                            class="rounded-lg bg-[#E88732] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#D87524]">
+                                            Simpan
+                                        </button>
 
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <div class="relative flex-1">
-                                <input type="file" name="pelanggan" accept=".csv,.txt"
-                                    class="block w-full text-sm text-slate-500 border border-slate-300 rounded-xl cursor-pointer
-                                file:mr-3 file:py-3 file:px-4 file:border-0
-                                file:bg-slate-100 file:text-slate-700 file:font-semibold
-                                hover:file:bg-amber-100">
-                            </div>
-                            <span class="flex items-center gap-1.5 text-xs text-slate-400 sm:w-20">
-                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                                CSV / TXT
-                            </span>
-                        </div>
-                    </div>
+                                    </form>
+                                @else
+                                    <span class="font-bold text-[#245C45]">
+                                        Rp {{ number_format($tarif[$z->id] ?? 0, 0, ',', '.') }}
+                                    </span>
+                                @endif
+                            </td>
 
-                    <div class="border-t border-slate-100"></div>
+                            {{-- SATUAN --}}
+                            <td class="px-5 py-4 text-center">
+                                <span class="rounded-lg bg-[#FFF1E3] px-3 py-1.5 text-xs font-semibold text-[#B96520]">
+                                    Per kg
+                                </span>
+                            </td>
 
-                    {{-- PAKET --}}
-                    <div class="grid grid-cols-1 md:grid-cols-[190px_1fr] gap-3 md:items-center">
-                        <div>
-                            <label class="text-sm font-semibold text-slate-700">
-                                Paket Historis
-                            </label>
-                            <p class="text-xs text-slate-400 mt-1">Riwayat pengiriman paket</p>
-                        </div>
+                        </tr>
+                    @endforeach
 
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <div class="relative flex-1">
-                                <input type="file" name="paket" accept=".csv,.txt"
-                                    class="block w-full text-sm text-slate-500 border border-slate-300 rounded-xl cursor-pointer
-                                file:mr-3 file:py-3 file:px-4 file:border-0
-                                file:bg-slate-100 file:text-slate-700 file:font-semibold
-                                hover:file:bg-amber-100">
-                            </div>
-                            <span class="flex items-center gap-1.5 text-xs text-slate-400 sm:w-20">
-                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                                CSV / TXT
-                            </span>
-                        </div>
-                    </div>
+                    @if ($zonas->isEmpty())
+                        <tr>
+                            <td colspan="3" class="px-5 py-10 text-center text-sm text-[#819487]">
+                                Belum ada data zona tarif.
+                            </td>
+                        </tr>
+                    @endif
 
-                    <div class="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                        <div class="flex items-start gap-2">
-                            <i data-lucide="info" class="w-4 h-4 text-amber-700 mt-0.5"></i>
-                            <p class="text-xs text-amber-800 leading-relaxed">
-                                Pastikan file yang dipilih memiliki format kolom sesuai template
-                                import sistem. File yang tidak sesuai dapat menyebabkan proses
-                                import gagal.
-                            </p>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div
-                    class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200">
-                    <button type="reset"
-                        class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 transition">
-                        Bersihkan
-                    </button>
-
-                    <button type="submit"
-                        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-sm font-semibold transition">
-                        <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                        Mulai Import
-                    </button>
-                </div>
-
-            </form>
+                </tbody>
+            </table>
         </div>
 
-        {{-- TABEL LAPORAN IMPORT --}}
-        @if (session('import_report'))
-            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-
-                <div
-                    class="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h2 class="font-bold text-slate-800">Laporan Hasil Import</h2>
-                        <p class="text-xs text-slate-500 mt-1">
-                            Informasi hasil proses pemasukan data.
-                        </p>
-                    </div>
-
-                    <span
-                        class="inline-flex items-center gap-2 text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-2 rounded-lg">
-                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
-                        Riwayat Proses Import
-                    </span>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-slate-50 text-slate-600">
-                            <tr>
-                                <th class="px-5 py-4 font-semibold">No.</th>
-                                <th class="px-5 py-4 font-semibold">Keterangan Import</th>
-                                <th class="px-5 py-4 font-semibold">Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody class="divide-y divide-slate-100">
-                            @foreach (session('import_report') as $hasil)
-                                <tr class="hover:bg-slate-50 transition">
-                                    <td class="px-5 py-4 text-slate-400">
-                                        {{ $loop->iteration }}
-                                    </td>
-
-                                    <td class="px-5 py-4 text-slate-700">
-                                        {{ $hasil }}
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        {{-- Status belum disimpulkan dari teks laporan --}}
-                                        <span
-                                            class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full text-xs font-semibold">
-                                            <i data-lucide="info" class="w-3.5 h-3.5"></i>
-                                            Laporan diterima
-                                        </span>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
-        @endif
+        {{-- FOOTER CARD --}}
+        <div class="border-t border-[#E5ECE3] bg-[#FAFCF8] px-5 py-3">
+            <p class="text-xs text-[#819487]">
+                Tarif pengiriman ditampilkan berdasarkan zona tujuan dan dihitung per kilogram.
+            </p>
+        </div>
 
     </div>
 
-    <script>
-        if (window.lucide) lucide.createIcons();
-    </script>
 @endsection
-```
