@@ -1,69 +1,589 @@
-<ion-content class="ion-padding">
-  <ion-item *ngIf="info" color="warning">
-    <ion-label class="ion-text-wrap">{{ info }}</ion-label>
-  </ion-item>
 
-  <div *ngIf="token && halaman !== 'ganti'">
-    <ion-button size="small" (click)="pindah('paket')">Paket</ion-button>
-    <ion-button size="small" (click)="pindah('cod')">COD</ion-button>
-    <ion-button size="small" (click)="pindah('akun')">Akun</ion-button>
+<ion-content class="kurir-content">
+
+  <div class="kurir-wrapper">
+
+    <!-- NOTIFIKASI -->
+    <div *ngIf="info" class="info-card">
+      <div class="info-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+      </div>
+      <div>{{ info }}</div>
+    </div>
+
+    <!-- NAVIGASI -->
+    <div *ngIf="token && halaman !== 'ganti'" class="nav-kurir">
+
+      <button
+        [class.active]="halaman === 'paket' || halaman === 'detail'"
+        (click)="pindah('paket')">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 8l-9-5-9 5 9 5 9-5Z"/>
+          <path d="M3 8v8l9 5 9-5V8"/>
+          <path d="M12 13v8"/>
+        </svg>
+
+        <span>Paket</span>
+      </button>
+
+      <button
+        [class.active]="halaman === 'cod'"
+        (click)="pindah('cod')">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 6v12"/>
+          <path d="M16 9.5c0-1.5-1.8-2.5-4-2.5s-4 1-4 2.5
+            1.8 2.5 4 2.5 4 1 4 2.5-1.8 2.5-4 2.5-4-1-4-2.5"/>
+        </svg>
+
+        <span>COD</span>
+      </button>
+
+      <button
+        [class.active]="halaman === 'akun'"
+        (click)="pindah('akun')">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+
+        <span>Akun</span>
+      </button>
+
+    </div>
+
+    <!-- LOGIN -->
+    <div *ngIf="halaman === 'login'" class="login-container">
+
+      <div class="login-header">
+
+        <div class="logo-box">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 8l-9-5-9 5 9 5 9-5Z"/>
+            <path d="M3 8v8l9 5 9-5V8"/>
+            <path d="M12 13v8"/>
+          </svg>
+        </div>
+
+        <h1>Priangan Kilat Express</h1>
+        <p>Portal pengiriman kurir</p>
+
+      </div>
+
+      <div class="login-card">
+
+        <div class="login-title">
+          <h2>Masuk Kurir</h2>
+          <p class="card-description">
+            Silakan masuk untuk melihat dan mengelola pengiriman paket Anda.
+          </p>
+        </div>
+
+        <ion-input
+          [(ngModel)]="akun"
+          label="Kode Kurir"
+          label-placement="floating"
+          placeholder="KUR-01"
+          fill="outline"
+          class="custom-input">
+        </ion-input>
+
+        <ion-input
+          [(ngModel)]="password"
+          type="password"
+          label="Password"
+          label-placement="floating"
+          fill="outline"
+          class="custom-input">
+        </ion-input>
+
+        <ion-input
+          [(ngModel)]="base"
+          label="Alamat Server API"
+          label-placement="floating"
+          fill="outline"
+          class="custom-input">
+        </ion-input>
+
+        <button class="primary-btn" (click)="masuk()">
+          Masuk ke Aplikasi
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- GANTI PASSWORD -->
+    <div *ngIf="halaman === 'ganti'" class="form-card">
+
+      <div class="form-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+
+      <h2>Perbarui Password</h2>
+
+      <p class="card-description">
+        Untuk keamanan akun, silakan ganti password sebelum melanjutkan.
+      </p>
+
+      <ion-input
+        [(ngModel)]="lama"
+        type="password"
+        label="Password Lama"
+        label-placement="floating"
+        fill="outline"
+        class="custom-input">
+      </ion-input>
+
+      <ion-input
+        [(ngModel)]="baru"
+        type="password"
+        label="Password Baru"
+        label-placement="floating"
+        placeholder="Minimal 8 karakter"
+        fill="outline"
+        class="custom-input">
+      </ion-input>
+
+      <ion-input
+        [(ngModel)]="konfirmasi"
+        type="password"
+        label="Konfirmasi Password Baru"
+        label-placement="floating"
+        fill="outline"
+        class="custom-input">
+      </ion-input>
+
+      <button class="primary-btn" (click)="ganti()">
+        Simpan Password
+      </button>
+
+    </div>
+
+    <!-- PAKET -->
+    <div *ngIf="halaman === 'paket'">
+
+      <div class="page-header">
+
+        <div>
+          <span class="eyebrow">PENGIRIMAN</span>
+          <h1>Paket Saya</h1>
+          <p>Daftar paket yang perlu Anda antar.</p>
+        </div>
+
+        <button class="refresh-btn" (click)="muatPaket()">
+
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 11a8 8 0 0 0-14.5-4L4 9"/>
+            <path d="M4 4v5h5"/>
+            <path d="M4 13a8 8 0 0 0 14.5 4L20 15"/>
+            <path d="M20 20v-5h-5"/>
+          </svg>
+
+          <span>Segarkan</span>
+        </button>
+
+      </div>
+
+      <!-- RINGKASAN -->
+      <div class="summary-card">
+
+        <div>
+          <span class="summary-label">Total paket</span>
+          <h2>{{ paket.length }}</h2>
+          <p>Paket yang sedang ditugaskan</p>
+        </div>
+
+        <div class="summary-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 8l-9-5-9 5 9 5 9-5Z"/>
+            <path d="M3 8v8l9 5 9-5V8"/>
+            <path d="M12 13v8"/>
+          </svg>
+        </div>
+
+      </div>
+
+      <!-- LIST PAKET -->
+      <div class="package-list">
+
+        <div
+          *ngFor="let p of paket"
+          class="package-card"
+          (click)="buka(p)">
+
+          <div class="package-top">
+
+            <div>
+              <span class="package-label">NOMOR RESI</span>
+              <h3>{{ p.resi }}</h3>
+            </div>
+
+            <span *ngIf="p.cod" class="cod-badge">
+              COD
+            </span>
+
+          </div>
+
+          <div class="package-divider"></div>
+
+          <div class="package-info">
+
+            <!-- PENERIMA -->
+            <div class="info-row">
+
+              <span class="info-symbol">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
+
+              <div>
+                <span class="info-label">Penerima</span>
+                <strong>{{ p.penerima }}</strong>
+              </div>
+
+            </div>
+
+            <!-- LOKASI -->
+            <div class="info-row">
+
+              <span class="info-symbol">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </span>
+
+              <div>
+                <span class="info-label">Tujuan</span>
+                <strong>{{ p.kota }}</strong>
+                <p>{{ p.alamat }}</p>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="package-footer">
+            <span>Detail pengiriman</span>
+
+            <span class="arrow">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/>
+                <path d="m12 5 7 7-7 7"/>
+              </svg>
+            </span>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- EMPTY PAKET -->
+      <div *ngIf="paket.length === 0" class="empty-state">
+
+        <div class="empty-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 8l-9-5-9 5 9 5 9-5Z"/>
+            <path d="M3 8v8l9 5 9-5V8"/>
+            <path d="M12 13v8"/>
+          </svg>
+        </div>
+
+        <h3>Tidak ada paket</h3>
+        <p>Belum ada paket yang ditugaskan kepada Anda.</p>
+
+      </div>
+
+    </div>
+
+    <!-- DETAIL PAKET -->
+    <div *ngIf="halaman === 'detail' && dipilih" class="detail-container">
+
+      <button class="back-btn" (click)="pindah('paket')">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"/>
+          <path d="m12 19-7-7 7-7"/>
+        </svg>
+
+        <span>Kembali ke daftar paket</span>
+      </button>
+
+      <div class="detail-card">
+
+        <!-- HEADER DETAIL -->
+        <div class="detail-header">
+
+          <span class="eyebrow">DETAIL PENGIRIMAN</span>
+          <h1>{{ dipilih.resi }}</h1>
+
+          <span *ngIf="dipilih.cod" class="cod-badge">
+            PAKET COD
+          </span>
+
+        </div>
+
+        <!-- INFORMASI PENERIMA -->
+        <div class="detail-section">
+
+          <span class="section-label">Informasi Penerima</span>
+
+          <div class="detail-row">
+            <span>Nama penerima</span>
+            <strong>{{ dipilih.penerima }}</strong>
+          </div>
+
+          <div class="detail-row">
+            <span>Telepon</span>
+            <strong>{{ dipilih.telepon }}</strong>
+          </div>
+
+          <div class="detail-row">
+            <span>Kota</span>
+            <strong>{{ dipilih.kota }}</strong>
+          </div>
+
+          <div class="detail-row">
+            <span>Alamat</span>
+            <strong>{{ dipilih.alamat }}</strong>
+          </div>
+
+        </div>
+
+        <!-- INFORMASI COD -->
+        <div *ngIf="dipilih.cod" class="cod-info">
+
+          <span>Tagihan COD</span>
+          <h2>Rp {{ dipilih.nilai_cod }}</h2>
+          <p>Tagihan perlu dikumpulkan dari penerima.</p>
+
+        </div>
+
+        <!-- CATATAN -->
+        <div class="detail-section">
+
+          <span class="section-label">Hasil Pengiriman</span>
+
+          <ion-textarea
+            [(ngModel)]="catatan"
+            label="Catatan pengiriman"
+            label-placement="floating"
+            placeholder="Isi catatan jika paket gagal dikirim"
+            fill="outline"
+            class="custom-input custom-textarea">
+          </ion-textarea>
+
+          <p class="note-hint">
+            Catatan wajib diisi jika status pengiriman Gagal Kirim.
+          </p>
+
+        </div>
+
+        <!-- TOMBOL HASIL -->
+        <div class="action-buttons">
+
+          <button class="success-btn" (click)="kirim('Terkirim')">
+
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="m5 12 4 4L19 6"/>
+            </svg>
+
+            Paket Terkirim
+          </button>
+
+          <button class="failed-btn" (click)="kirim('Gagal Kirim')">
+
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="m15 9-6 6"/>
+              <path d="m9 9 6 6"/>
+            </svg>
+
+            Gagal Kirim
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- COD -->
+    <div *ngIf="halaman === 'cod'">
+
+      <div class="page-header">
+
+        <div>
+          <span class="eyebrow">KEUANGAN</span>
+          <h1>Setoran COD</h1>
+          <p>Informasi paket COD yang perlu disetorkan.</p>
+        </div>
+
+      </div>
+
+      <!-- RINGKASAN COD -->
+      <div class="cod-summary">
+
+        <span>Total COD belum disetor</span>
+        <h1>Rp {{ cod.total_belum_disetor }}</h1>
+        <p>Akumulasi COD dari paket yang telah terkirim.</p>
+
+      </div>
+
+      <!-- LIST COD -->
+      <div class="cod-list-card">
+
+        <div class="list-header">
+          <h2>Riwayat COD</h2>
+          <span>{{ cod.paket.length }} paket</span>
+        </div>
+
+        <div *ngFor="let p of cod.paket" class="cod-item">
+
+          <div class="cod-item-main">
+            <h3>{{ p.resi }}</h3>
+            <strong>Rp {{ p.nilai_cod }}</strong>
+          </div>
+
+          <span
+            class="deposit-badge"
+            [class.deposit-done]="p.disetor"
+            [class.deposit-pending]="!p.disetor">
+
+            {{ p.disetor ? 'Disetor' : 'Belum Disetor' }}
+
+          </span>
+
+        </div>
+
+        <!-- EMPTY COD -->
+        <div *ngIf="cod.paket.length === 0" class="empty-state">
+
+          <div class="empty-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 6v12"/>
+              <path d="M16 9.5c0-1.5-1.8-2.5-4-2.5s-4 1-4 2.5
+                1.8 2.5 4 2.5 4 1 4 2.5-1.8 2.5-4 2.5-4-1-4-2.5"/>
+            </svg>
+          </div>
+
+          <h3>Belum ada data COD</h3>
+          <p>Data COD terkirim akan ditampilkan di sini.</p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- AKUN -->
+    <div *ngIf="halaman === 'akun'" class="account-card">
+
+      <div class="account-header">
+
+        <div class="account-avatar">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+
+        <h1>Akun Kurir</h1>
+        <p>Pengaturan akun dan keamanan.</p>
+
+      </div>
+
+      <!-- GANTI PASSWORD -->
+      <button class="account-btn" (click)="halaman = 'ganti'">
+
+        <span class="account-action-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="10" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </span>
+
+        <div>
+          <strong>Ganti Password</strong>
+          <p>Perbarui password akun Anda.</p>
+        </div>
+
+        <span class="arrow">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+            <path d="m12 5 7 7-7 7"/>
+          </svg>
+        </span>
+
+      </button>
+
+      <!-- LOGOUT -->
+      <button class="logout-btn" (click)="keluar()">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <path d="M16 17l5-5-5-5"/>
+          <path d="M21 12H9"/>
+        </svg>
+
+        Keluar dari akun
+
+      </button>
+
+    </div>
+
   </div>
 
-  <div *ngIf="halaman === 'login'">
-    <ion-input [(ngModel)]="akun" label="Kode kurir" label-placement="floating" placeholder="KUR-01"></ion-input>
-    <ion-input [(ngModel)]="password" type="password" label="Password" label-placement="floating"></ion-input>
-    <ion-input [(ngModel)]="base" label="Alamat server" label-placement="floating"></ion-input>
-    <ion-button expand="block" (click)="masuk()">Masuk</ion-button>
-  </div>
-
-  <div *ngIf="halaman === 'ganti'">
-    <h3>Anda wajib mengganti password</h3>
-    <ion-input [(ngModel)]="lama" type="password" label="Password lama" label-placement="floating"></ion-input>
-    <ion-input [(ngModel)]="baru" type="password" label="Password baru (min 8)" label-placement="floating"></ion-input>
-    <ion-input [(ngModel)]="konfirmasi" type="password" label="Ulangi password baru" label-placement="floating"></ion-input>
-    <ion-button expand="block" (click)="ganti()">Simpan</ion-button>
-  </div>
-
-  <div *ngIf="halaman === 'paket'">
-    <h3>Paket yang harus dikirim ({{ paket.length }})</h3>
-    <ion-button size="small" fill="outline" (click)="muatPaket()">Segarkan</ion-button>
-    <ion-list>
-      <ion-item *ngFor="let p of paket" (click)="buka(p)" button>
-        <ion-label class="ion-text-wrap">
-          <h2>{{ p.resi }}</h2>
-          <p>{{ p.penerima }} - {{ p.kota }}</p>
-          <p>{{ p.alamat }}</p>
-        </ion-label>
-        <ion-badge *ngIf="p.cod" color="danger">COD</ion-badge>
-      </ion-item>
-    </ion-list>
-    <p *ngIf="paket.length === 0">Tidak ada paket Dikirim.</p>
-  </div>
-
-  <div *ngIf="halaman === 'detail' && dipilih">
-    <h3>{{ dipilih.resi }}</h3>
-    <p>{{ dipilih.penerima }} ({{ dipilih.telepon }})</p>
-    <p>{{ dipilih.alamat }}, {{ dipilih.kota }}</p>
-    <p *ngIf="dipilih.cod">Tagih COD: Rp {{ dipilih.nilai_cod }}</p>
-    <ion-textarea [(ngModel)]="catatan" label="Catatan (wajib bila Gagal Kirim)" label-placement="floating"></ion-textarea>
-    <ion-button expand="block" color="success" (click)="kirim('Terkirim')">Terkirim</ion-button>
-    <ion-button expand="block" color="danger" (click)="kirim('Gagal Kirim')">Gagal Kirim</ion-button>
-    <ion-button expand="block" fill="clear" (click)="pindah('paket')">Kembali</ion-button>
-  </div>
-
-  <div *ngIf="halaman === 'cod'">
-    <h3>COD belum disetor: Rp {{ cod.total_belum_disetor }}</h3>
-    <ion-list>
-      <ion-item *ngFor="let p of cod.paket">
-        <ion-label>{{ p.resi }} - Rp {{ p.nilai_cod }}</ion-label>
-        <ion-badge [color]="p.disetor ? 'success' : 'warning'">{{ p.disetor ? 'Disetor' : 'Belum' }}</ion-badge>
-      </ion-item>
-    </ion-list>
-    <p *ngIf="cod.paket.length === 0">Belum ada COD terkirim.</p>
-  </div>
-
-  <div *ngIf="halaman === 'akun'">
-    <ion-button expand="block" (click)="halaman = 'ganti'">Ganti password</ion-button>
-    <ion-button expand="block" color="medium" (click)="keluar()">Keluar</ion-button>
-  </div>
 </ion-content>
