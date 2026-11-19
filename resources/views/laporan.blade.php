@@ -235,11 +235,18 @@
 
         {{-- TABEL DETAIL SETORAN COD --}}
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 p-5">
-                <h2 class="font-bold text-slate-800">Detail Setoran COD per Kurir</h2>
-                <p class="mt-1 text-xs text-slate-500">
-                    Rincian status penyetoran COD setiap kurir.
-                </p>
+            <div class="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="font-bold text-slate-800">Detail Setoran COD per Kurir</h2>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Rincian status penyetoran COD setiap kurir.
+                    </p>
+                </div>
+
+                <button id="btnPerforma" type="button"
+                    class="rounded-xl bg-[#245C45] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#194632]">
+                    Laporan Performa Kurir
+                </button>
             </div>
 
             <div class="overflow-x-auto">
@@ -302,12 +309,110 @@
         </div>
 
     </div>
+    {{-- POPUP PERFORMA KURIR --}}
+    <div id="modalPerforma" class="fixed inset-0 z-100] hidden items-center justify-center bg-black/50 p-4">
+
+        <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+
+            <div class="flex items-center justify-between border-b p-5">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Laporan Performa Kurir</h2>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Persentase paket terkirim dan gagal kirim.
+                    </p>
+                </div>
+                <button id="tutupPerforma" type="button" class="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100">
+                    ✕
+                </button>
+            </div>
+
+            <div class="max-h-[65vh] overflow-y-auto p-5">
+                <p class="mb-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+                    Periode: {{ $dari }} — {{ $sampai }}
+                </p>
+
+                <div class="overflow-x-auto rounded-xl border">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-600">
+                            <tr>
+                                <th class="p-3 text-left">Kurir</th>
+                                <th class="p-3 text-center">Terkirim</th>
+                                <th class="p-3 text-center">Gagal</th>
+                                <th class="p-3 text-center">% Terkirim</th>
+                                <th class="p-3 text-center">% Gagal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($performa as $item)
+                                <tr class="border-t">
+                                    <td class="p-3">
+                                        <p class="font-semibold">{{ $item->courier->code ?? '-' }}</p>
+                                        <p class="text-xs text-slate-500">
+                                            {{ $item->courier->name ?? '-' }}
+                                        </p>
+                                    </td>
+                                    <td class="p-3 text-center text-green-700">{{ $item->terkirim }}</td>
+                                    <td class="p-3 text-center text-red-600">{{ $item->gagal }}</td>
+                                    <td class="p-3 text-center font-semibold text-green-700">
+                                        {{ number_format($item->persen_terkirim, 2) }}%
+                                    </td>
+                                    <td class="p-3 text-center font-semibold text-red-600">
+                                        {{ number_format($item->persen_gagal, 2) }}%
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="p-6 text-center text-slate-400">
+                                        Belum ada data performa kurir.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex justify-end border-t p-4">
+                <button id="tutupPerformaBawah" type="button"
+                    class="rounded-xl bg-slate-100 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
 
     {{-- CHART.JS --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('modalPerforma');
+
+            function bukaPerforma() {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.classList.add('overflow-hidden');
+            }
+
+            function tutupPerforma() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.classList.remove('overflow-hidden');
+            }
+
+            document.getElementById('btnPerforma')?.addEventListener('click', bukaPerforma);
+            document.getElementById('tutupPerforma')?.addEventListener('click', tutupPerforma);
+            document.getElementById('tutupPerformaBawah')?.addEventListener('click', tutupPerforma);
+
+            modal?.addEventListener('click', function(e) {
+                if (e.target === modal) tutupPerforma();
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    tutupPerforma();
+                }
+            });
 
             const statusLabels = {!! json_encode($statusLabels, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
             const statusValues = {!! json_encode($statusValues, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};

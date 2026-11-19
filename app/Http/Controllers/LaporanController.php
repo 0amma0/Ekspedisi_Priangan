@@ -11,21 +11,75 @@ class LaporanController extends Controller
 {
     public function index(Request $r)
     {
-        $dari = $r->input('dari', now()->startOfMonth()->toDateString());
-        $sampai = $r->input('sampai', now()->toDateString());
+        $dari = $r->input(
+            'dari',
+            now()->startOfMonth()->toDateString()
+        );
+
+        $sampai = $r->input(
+            'sampai',
+            now()->toDateString()
+        );
+
         if ($dari > $sampai) {
-            return back()->with('error', 'Tanggal awal tidak boleh setelah tanggal akhir.');
+            return back()->with(
+                'error',
+                'Tanggal awal tidak boleh setelah tanggal akhir.'
+            );
         }
 
-        $perStatus = Package::whereBetween('received_date', [$dari, $sampai])
-            ->select('status', DB::raw('count(*) as jumlah'))->groupBy('status')->pluck('jumlah', 'status');
+        // REKAP JUMLAH PAKET PER STATUS
+        $perStatus = Package::whereBetween(
+            'received_date',
+            [$dari, $sampai]
+        )
+            ->select('status', DB::raw('COUNT(*) as jumlah'))
+            ->groupBy('status')
+            ->pluck('jumlah', 'status');
 
-        $pendapatan = Package::whereBetween('packages.received_date', [$dari, $sampai])
+        // REKAP PENDAPATAN PER ZONA
+        $pendapatan = Package::whereBetween(
+            'packages.received_date',
+            [$dari, $sampai]
+        )
             ->leftJoin('zones', 'zones.id', '=', 'packages.zone_id')
-            ->select('zones.name as zona', DB::raw('sum(packages.shipping_cost) as ongkir'), DB::raw('sum(packages.cod_fee) as
-biaya_cod'))
-            ->groupBy('zones.name')->get();
+            ->select(
+                'zones.name as zona',
+                DB::raw('SUM(packages.shipping_cost) as ongkir'),
+                DB::raw('SUM(packages.cod_fee) as biaya_cod')
+            )
+            ->groupBy('zones.name')
+            ->get();
 
+        // LAPORAN PERFORMA KURIR
+        $performa = Package::query()
+            ->whereBetween('received_date', [$dari, $sampai])
+            ->whereNotNull('courier_id')
+            ->selectRaw('courier_id,
+                SUM(CASE WHEN status = "Terkirim" THEN 1 ELSE 0 END) AS terkirim,
+                SUM(CASE WHEN status = "Gagal Kirim" THEN 1 ELSE 0 END) AS gagal')
+            ->groupBy('courier_id')
+            ->with('courier')
+            ->get();
+
+        $performa->transform(function ($item) {
+            $terkirim = (int) $item->terkirim;
+            $gagal = (int) $item->gagal;
+
+            $total = $terkirim + $gagal;
+
+            $item->persen_terkirim = $total
+                ? round(($terkirim / $total) * 100, 2)
+                : 0;
+
+            $item->persen_gagal = $total
+                ? round(($gagal / $total) * 100, 2)
+                : 0;
+
+            return $item;
+        });
+
+        // REKAP SETORAN COD PER KURIR
         $rekap = Courier::leftJoin('packages', function ($j) use ($dari, $sampai) {
             $j->on('packages.courier_id', '=', 'couriers.id')
                 ->where('packages.is_cod', true)
@@ -38,7 +92,11 @@ biaya_cod'))
                 DB::raw('COALESCE(SUM(CASE WHEN packages.cod_settled_at IS NULL THEN packages.cod_amount ELSE 0 END), 0) as belum'),
                 DB::raw('COALESCE(SUM(CASE WHEN packages.cod_settled_at IS NOT NULL THEN packages.cod_amount ELSE 0 END), 0) as sudah')
             )
-            ->groupBy('couriers.id', 'couriers.code', 'couriers.name')
+            ->groupBy(
+                'couriers.id',
+                'couriers.code',
+                'couriers.name'
+            )
             ->get();
 
         $totalBelum = $rekap->sum('belum');
@@ -50,6 +108,7 @@ biaya_cod'))
             'sampai',
             'perStatus',
             'pendapatan',
+            'performa',
             'rekap',
             'totalBelum',
             'totalSudah',
