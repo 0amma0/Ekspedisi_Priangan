@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Validation\Rule;
 use App\Models\Courier;
 use App\Models\Package;
 use App\Models\User;
@@ -26,14 +27,20 @@ class KurirController extends Controller
         $v = $r->validate([
             'name' => 'required',
             'phone' => ['required', Telepon::aturan()],
+            'email' => 'nullable|email|max:255|unique:users,email',
             'password' => 'required|min:8',
-        ], ['password.min' => 'Password minimal 8 karakter.']);
+        ], [
+            'password.min' => 'Password minimal 8 karakter.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email sudah digunakan akun lain.',
+        ]);
 
         DB::transaction(function () use ($v) {
-            // kode berikutnya: angka terbesar + 1 (KUR-01, KUR-02, ...)
+
             $maks = Courier::pluck('code')->map(fn($k) => (int) substr($k, 4))->max() ?? 0;
             $user = User::create([
                 'name' => $v['name'],
+                'email' => $v['email'] ?? null,
                 'role' => 'kurir',
                 'password' => $v['password'],
                 'must_change_password' => true,
@@ -74,5 +81,38 @@ class KurirController extends Controller
     {
         $kurir = Courier::findOrFail($id);
         return view('kurir.form', compact('kurir'));
+    }
+    public function update(Request $r, int $id)
+    {
+        $kurir = Courier::with('user')->findOrFail($id);
+
+        $v = $r->validate([
+            'name' => 'required',
+            'phone' => ['required', Telepon::aturan()],
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($kurir->user_id),
+            ],
+        ], [
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email sudah digunakan akun lain.',
+        ]);
+
+        DB::transaction(function () use ($kurir, $v) {
+
+            $kurir->user->update([
+                'name' => $v['name'],
+                'email' => $v['email'] ?? null,
+            ]);
+
+            $kurir->update([
+                'name' => $v['name'],
+                'phone' => Telepon::rapikan($v['phone']),
+            ]);
+        });
+
+        return redirect('/kurir')->with('ok', 'Data kurir berhasil diperbarui.');
     }
 }

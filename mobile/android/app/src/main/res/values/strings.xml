@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Priangan Kilat Express</string>
+    <string name="title_activity_main">Priangan Kilat Express</string>
+    <string name="package_name">com.priangan.kilatexpress</string>
+    <string name="custom_url_scheme">com.priangan.kilatexpress</string>
+</resources>

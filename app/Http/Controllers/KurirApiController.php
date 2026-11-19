@@ -8,6 +8,9 @@ use App\Services\PaketDitolak;
 use App\Services\PaketService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use App\Models\User;
+use Illuminate\Support\Facades\Password;
 
 class KurirApiController extends Controller
 {
@@ -116,5 +119,130 @@ class KurirApiController extends Controller
             'nilai_cod' => $p->cod_amount,
             'status' => $p->status,
         ];
+    }
+    public function akun(Request $r)
+    {
+        return [
+            'email' => $r->user()->email,
+        ];
+    }
+
+    public function email(Request $r)
+    {
+        $r->validate([
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($r->user()->id),
+            ],
+        ], [
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email sudah digunakan akun lain.',
+        ]);
+
+        $r->user()->update([
+            'email' => $r->filled('email') ? $r->email : null,
+        ]);
+
+        return [
+            'message' => 'Email berhasil diperbarui.',
+            'email' => $r->user()->fresh()->email,
+        ];
+    }
+
+    public function forgotPassword(Request $r)
+    {
+        $r->validate([
+            'akun' => 'required|string',
+            'email' => 'required|email',
+        ]);
+
+        // Cari akun berdasarkan kode kurir.
+        $kurir = Courier::whereRaw(
+            'LOWER(code) = ?',
+            [strtolower(trim($r->akun))]
+        )->first();
+
+        // Email harus cocok dengan email akun kurir.
+        if (
+            !$kurir ||
+            !$kurir->user ||
+            !$kurir->user->email ||
+            strtolower($kurir->user->email) !== strtolower(trim($r->email))
+        ) {
+            // Pesan dibuat umum agar tidak membocorkan akun yang terdaftar.
+            return response()->json([
+                'message' => 'Jika kode akun dan email terdaftar cocok, tautan reset akan dikirim ke email tersebut.'
+            ]);
+        }
+
+        // Kirim email reset menggunakan password broker Laravel.
+        $status = Password::sendResetLink([
+            'email' => $kurir->user->email,
+        ]);
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            return response()->json([
+                'message' => 'Email reset belum dapat dikirim. Silakan coba lagi nanti.'
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => 'Jika kode akun dan email terdaftar cocok, tautan reset akan dikirim ke email tersebut.'
+        ]);
+    }
+
+
+    public function resetPassword(Request $r)
+    {
+        $r->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.min' => 'Password minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak sama.',
+        ]);
+
+        // Pastikan email tersebut milik akun kurir.
+        $user = User::where('email', $r->email)
+            ->where('role', 'kurir')
+            ->first();
+
+        if (!$user || !Courier::where('user_id', $user->id)->exists()) {
+            return response()->json([
+                'message' => 'Tautan reset tidak valid atau sudah kedaluwarsa.'
+            ], 422);
+        }
+
+        // Validasi token dan ubah password melalui Laravel Password Broker.
+        $status = Password::reset(
+            [
+                'email' => $r->email,
+                'token' => $r->token,
+                'password' => $r->password,
+                'password_confirmation' => $r->password_confirmation,
+            ],
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => $password,
+                    'must_change_password' => false,
+                ])->save();
+
+                // Putuskan sesi/token APK yang lama.
+                $user->tokens()->delete();
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return response()->json([
+                'message' => 'Tautan reset tidak valid atau sudah kedaluwarsa.'
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => 'Password berhasil direset. Silakan login kembali.'
+        ]);
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\TarifController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\Admin\ImportController;
 
+
 // Halaman Publik & Auth
 Route::get('/', fn() => redirect('/cek-resi'));
 Route::get('/cek-resi', [CekResiController::class, 'index']);
@@ -41,6 +42,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/cod', [PaketController::class, 'cod']);
     Route::post('/paket/{paket}/setoran', [PaketController::class, 'setoran']);
     Route::get('/kurir/{id}/edit', [KurirController::class, 'edit']);
+    Route::put('/kurir/{id}', [KurirController::class, 'update']);
     Route::get('/zona/cek', [PaketController::class, 'cekZona'])
         ->name('zona.cek');
     Route::get('/admin/import', [ImportController::class, 'index'])
@@ -48,7 +50,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::post('/admin/import', [ImportController::class, 'store'])
         ->name('admin.import.store');
-    Route::post('/paket/{paket}/setoran-cod',[PaketController::class, 'setoranCod']
+    Route::post(
+        '/paket/{paket}/setoran-cod',
+        [PaketController::class, 'setoranCod']
     );
 });
 
@@ -80,3 +84,5 @@ Route::get('/debug-php-ssl', function () {
         'openssl_cafile' => ini_get('openssl.cafile'),
     ]);
 });
+
+

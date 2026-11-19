@@ -328,34 +328,31 @@
         }
 
         /* NOTIFIKASI */
-        .alert-success {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #E7D5B5;
-            border-radius: 11px;
-            background: #FFFBEB !important;
-            color: var(--hijau-utama) !important;
-            font-size: 13px;
-        }
-
-        .alert-error {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #F0CACA;
-            border-radius: 11px;
-            background: #FEF0F0 !important;
-            color: #B42323 !important;
-            font-size: 13px;
-        }
-
+        .alert-success,
+        .alert-error,
         .alert-validation {
             margin-bottom: 20px;
             padding: 15px;
-            border: 1px solid #E7D5B5;
             border-radius: 11px;
+            font-size: 13px;
+        }
+
+        .alert-success {
+            border: 1px solid #E7D5B5;
+            background: #FFFBEB !important;
+            color: var(--hijau-utama) !important;
+        }
+
+        .alert-error {
+            border: 1px solid #F0CACA;
+            background: #FEF0F0 !important;
+            color: #B42323 !important;
+        }
+
+        .alert-validation {
+            border: 1px solid #E7D5B5;
             background: #FEF3C7 !important;
             color: #92400E !important;
-            font-size: 13px;
         }
 
         /* FOOTER */
@@ -413,7 +410,6 @@
     {{-- HEADER --}}
     <header class="app-header">
         <div class="header-inner">
-
             <div class="header-left">
                 <button id="menuBtn" class="menu-button" aria-label="Buka menu">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -437,17 +433,13 @@
                         <p class="user-name">{{ auth()->user()->name }}</p>
                         <p class="user-role">{{ auth()->user()->role }}</p>
                     </div>
-
                     <div class="user-avatar">
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     </div>
                 </div>
             @else
-                <a href="{{ url('/login') }}" class="login-button">
-                    Masuk Staf
-                </a>
+                <a href="{{ url('/login') }}" class="login-button">Masuk Staf</a>
             @endauth
-
         </div>
     </header>
 
@@ -456,80 +448,61 @@
 
     {{-- SIDEBAR --}}
     <aside id="sidebar">
-
         <div class="sidebar-heading">
             <div>
                 <p class="sidebar-heading-title">Menu Navigasi</p>
                 <p class="sidebar-heading-subtitle">Priangan Kilat Express</p>
             </div>
-
             <button id="lockBtn" type="button">Lock</button>
         </div>
 
         <nav class="sidebar-nav">
-
             @auth
                 @php
                     $role = auth()->user()->role;
+
+                    // Daftar menu dibedakan berdasarkan role pengguna
+                    $menus = match ($role) {
+                        'admin' => [
+                            'Paket' => url('/paket'),
+                            'Input Paket' => url('/paket/create'),
+                            'Setoran COD' => url('/cod'),
+                            'Pelanggan' => url('/pelanggan'),
+                            'Kurir' => url('/kurir'),
+                            'Import Data' => route('admin.import.index'),
+                            'Tarif' => url('/tarif'),
+                        ],
+                        'manajer' => [
+                            'Data pelanggan' => url('/pelanggan'),
+                            'Data kurir' => url('/kurir'),
+                            'Laporan' => url('/laporan'),
+                            'Tarif' => url('/tarif'),
+                        ],
+                        default => [],
+                    };
                 @endphp
 
-                {{-- MENU ADMIN --}}
-                @if ($role === 'admin')
-                    @foreach ([
-            'Paket' => url('/paket'),
-            'Input Paket' => url('/paket/create'),
-            'Setoran COD' => url('/cod'),
-            'Pelanggan' => url('/pelanggan'),
-            'Kurir' => url('/kurir'),
-            'Import Data' => route('admin.import.index'),
-            'Tarif' => url('/tarif'),
-        ] as $label => $url)
-                        <a href="{{ $url }}">
-                            <span class="menu-dot"></span>
-                            {{ $label }}
-                        </a>
-                    @endforeach
-
-                    {{-- MENU MANAJER --}}
-                @elseif ($role === 'manajer')
-                    <a href="{{ url('/pelanggan/') }}">
+                {{-- Tampilkan menu sesuai role --}}
+                @foreach ($menus as $label => $url)
+                    <a href="{{ $url }}">
                         <span class="menu-dot"></span>
-                        Data pelanggan
+                        {{ $label }}
                     </a>
+                @endforeach
 
-                    {{-- hanya melihat data baik itu pelanggan dan kurir --}}
-                    <a href="{{ url('/kurir') }}">
-                        <span class="menu-dot"></span>
-                        Data kurir
-                    </a>
-
-                    <a href="{{ url('/laporan') }}">
-                        <span class="menu-dot"></span>
-                        Laporan
-                    </a>
-
-                    <a href="{{ url('/tarif') }}">
-                        <span class="menu-dot"></span>
-                        Tarif
-                    </a>
-                @endif
-
-                {{-- PENGATURAN AKUN --}}
+                {{-- Pengaturan Akun --}}
                 @if (in_array($role, ['admin', 'manajer']))
                     <hr class="sidebar-divider">
-
                     <a href="{{ route('akun.password') }}">
                         <span class="menu-dot"></span>
                         Pengaturan Akun
                     </a>
                 @endif
 
-                {{-- LOGOUT --}}
+                {{-- Logout --}}
                 <hr class="sidebar-divider">
-
                 <form method="POST" action="{{ url('/logout') }}">
                     @csrf
-
                     <button type="submit" class="logout-button">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
@@ -539,30 +512,26 @@
                     </button>
                 </form>
             @else
-                {{-- MENU PENGUNJUNG --}}
-                <a href="{{ url('/cek-resi') }}">
-                    <span class="menu-dot"></span>
-                    Cek Resi
-                </a>
-
-                <a href="{{ url('/login') }}">
-                    <span class="menu-dot"></span>
-                    Masuk Staf
-                </a>
-
+                {{-- Menu Pengunjung (Belum Login) --}}
+                @foreach ([
+            'Cek Resi' => url('/cek-resi'),
+            'Masuk Staf' => url('/login'),
+        ] as $label => $url)
+                    <a href="{{ $url }}">
+                        <span class="menu-dot"></span>
+                        {{ $label }}
+                    </a>
+                @endforeach
             @endauth
-
         </nav>
 
         <div class="sidebar-footer">
             © {{ date('Y') }} Priangan Kilat Express
         </div>
-
     </aside>
 
     {{-- MAIN CONTENT --}}
     <main id="mainContent">
-
         @hasSection('header')
             <div class="mb-7">
                 @yield('header')
@@ -584,7 +553,6 @@
         @if ($errors->any())
             <div class="alert-validation">
                 <p class="mb-2 font-semibold">Periksa kembali data:</p>
-
                 <ul class="list-inside list-disc">
                     @foreach ($errors->all() as $e)
                         <li>{{ $e }}</li>
@@ -594,7 +562,6 @@
         @endif
 
         @yield('isi')
-
     </main>
 
     {{-- FOOTER --}}
@@ -613,19 +580,22 @@
         const lockBtn = document.getElementById('lockBtn');
         const main = document.getElementById('mainContent');
 
+        // Ambil status kunci sidebar terakhir dari browser
         let locked = localStorage.getItem('sidebarLocked') === 'true';
         let opened = locked;
 
         function updateSidebar() {
+            const isLockedMode = opened && locked;
+
             sidebar.classList.toggle('open', opened);
             overlay.classList.toggle('hidden', !opened || locked);
-
-            main.classList.toggle('sidebar-locked', opened && locked);
+            main.classList.toggle('sidebar-locked', isLockedMode);
 
             lockBtn.textContent = locked ? 'Locked' : 'Lock';
             lockBtn.classList.toggle('locked', locked);
         }
 
+        // Klik tombol hamburger menu
         menuBtn.addEventListener('click', () => {
             if (locked) {
                 locked = false;
@@ -634,24 +604,24 @@
             } else {
                 opened = !opened;
             }
-
             updateSidebar();
         });
 
+        // Klik tombol Lock / Locked
         lockBtn.addEventListener('click', () => {
             locked = !locked;
             opened = locked;
-
-            localStorage.setItem('sidebarLocked', locked ? 'true' : 'false');
-
+            localStorage.setItem('sidebarLocked', String(locked));
             updateSidebar();
         });
 
+        // Klik area gelap di luar sidebar
         overlay.addEventListener('click', () => {
             opened = false;
             updateSidebar();
         });
 
+        // Jalankan saat halaman pertama kali dibuka
         updateSidebar();
     </script>
 
