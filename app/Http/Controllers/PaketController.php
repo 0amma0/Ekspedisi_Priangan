@@ -22,11 +22,72 @@ class PaketController extends Controller
 
     public function index(Request $r)
     {
-        $pakets = Package::with(['customer', 'courier'])
-            ->when($r->q, fn($q, $v) => $q->where('tracking_number', 'like', '%' . $v . '%'))
-            ->latest('id')->paginate(15)->withQueryString();
-        $kurirs = Courier::where('is_active', true)->orderBy('code')->get();
-        return view('paket.index', compact('pakets', 'kurirs'));
+        $filter = $r->input('filter', 'semua');
+        $batasWaktu = now()->subHours(72);
+
+        // Mengambil waktu Transit yang paling baru dari history.
+        $waktuTransit = DB::table('package_histories')
+            ->select('created_at')
+            ->whereColumn('package_id', 'packages.id')
+            ->where('to_status', 'Transit')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(1);
+
+        $query = Package::with(['customer', 'courier'])
+            ->select('packages.*')
+            ->selectSub($waktuTransit, 'transit_mulai')
+            ->when($r->filled('q'), function ($q) use ($r) {
+                $q->where(
+                    'tracking_number',
+                    'like',
+                    '%' . $r->input('q') . '%'
+                );
+            });
+
+        // Filter paket yang sudah Transit lebih dari 72 jam.
+        if ($filter === 'tertahan') {
+            $query->where('packages.status', 'Transit')
+                ->whereRaw(
+                    '(SELECT created_at FROM package_histories
+                WHERE package_id = packages.id
+                AND to_status = ?
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1) < ?',
+                    ['Transit', $batasWaktu]
+                );
+        }
+
+        $pakets = $query->latest('packages.id')
+            ->paginate(15)
+            ->withQueryString();
+
+        // Menghitung durasi Transit untuk ditampilkan.
+        foreach ($pakets as $p) {
+            $mulai = $p->transit_mulai
+                ? \Carbon\Carbon::parse($p->transit_mulai)
+                : null;
+
+            $p->transit_tertahan = (
+                $p->status === 'Transit'
+                && $mulai
+                && $mulai->lt($batasWaktu)
+            );
+
+            $p->transit_durasi = $mulai
+                ? now()->diff($mulai)->format('%a hari %h jam')
+                : '-';
+
+            $p->transit_tanggal = $mulai
+                ? $mulai->format('d-m-Y H:i')
+                : '-';
+        }
+
+        $kurirs = Courier::where('is_active', true)
+            ->orderBy('code')
+            ->get();
+
+        return view('paket.index', compact('pakets', 'kurirs', 'filter'));
     }
 
     public function create()

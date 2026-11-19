@@ -29,7 +29,14 @@
                     <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari nomor resi..."
                         class="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700">
                 </div>
-
+                <select name="filter" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm">
+                    <option value="semua" {{ $filter === 'semua' ? 'selected' : '' }}>
+                        Semua Paket
+                    </option>
+                    <option value="tertahan" {{ $filter === 'tertahan' ? 'selected' : '' }}>
+                        Transit Tertahan
+                    </option>
+                </select>
                 <button type="submit"
                     class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition">
                     Cari Paket
@@ -140,10 +147,19 @@
                                         };
                                     @endphp
 
-                                    <span
-                                        class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium {{ $statusStyle }}">
-                                        {{ $p->status }}
-                                    </span>
+                                    <div class="flex flex-col items-start gap-1">
+                                        <span
+                                            class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium {{ $statusStyle }}">
+                                            {{ $p->status }}
+                                        </span>
+
+                                        @if ($p->transit_tertahan)
+                                            <span
+                                                class="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
+                                                Transit > 3 hari
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
 
                                 {{-- Gagal --}}

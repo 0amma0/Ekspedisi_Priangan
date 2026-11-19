@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\PackageHistory;
 use Illuminate\Database\Eloquent\Model;
 
 class Package extends Model

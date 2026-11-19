@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
@@ -49,6 +50,7 @@ class AuthController extends Controller
             'password_baru.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
+        /** @var User $user */
         $user = Auth::user();
 
         if (!Hash::check($r->password_lama, $user->password)) {
