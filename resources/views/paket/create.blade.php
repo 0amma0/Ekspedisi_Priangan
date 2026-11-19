@@ -267,7 +267,7 @@
                             </div>
 
                             <button type="button" id="close-volumetrik"
-                                class="hover:bg-purple-600 rounded-lg p-1 transition" title="Tutup informasi">
+                                class="hover:bg-[#245c45] rounded-lg p-1 transition" title="Tutup informasi">
                                 <i data-lucide="x" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -313,7 +313,7 @@
                                 </div>
                             </div>
 
-                            <div class="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                            <div class="bg-amber-100 border border-amber-100 rounded-xl p-3">
                                 <p class="text-xs leading-relaxed text-amber-900">
                                     Sistem menggunakan berat terbesar antara berat aktual
                                     dan berat volumetrik sebagai dasar perhitungan ongkir.
@@ -323,7 +323,6 @@
 
                         </div>
                     </div>
-
 
                     {{-- BERAT DAN LAYANAN --}}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -364,6 +363,43 @@
 
                     </div>
             </section>
+
+
+            {{-- ASURANSI PAKET --}}
+            <div class="border-t border-slate-200 p-5 sm:p-6">
+                <div class="flex items-start gap-3">
+                    <input type="checkbox" name="is_insured" id="is_insured" value="1"
+                        {{ old('is_insured') ? 'checked' : '' }}
+                        class="mt-1 h-4 w-4 rounded border-slate-300 text-amber-700 focus:ring-amber-600">
+
+                    <div>
+                        <label for="is_insured" class="font-semibold text-slate-800">
+                            Gunakan Asuransi
+                        </label>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Lindungi barang dengan biaya asuransi sebesar 0,5% dari nilai barang.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="insurance-value-wrapper" class="{{ old('is_insured') ? '' : 'hidden' }} mt-4">
+                    <label for="declared_value" class="mb-2 block text-sm font-medium text-slate-700">
+                        Nilai Barang (Rp)
+                    </label>
+
+                    <input type="number" name="declared_value" id="declared_value" min="1" step="1"
+                        value="{{ old('declared_value') }}" placeholder="Contoh: 1000000"
+                        class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:border-amber-600 focus:ring-2 focus:ring-amber-100">
+
+                    @error('declared_value')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+
+                    <p class="mt-2 text-xs text-slate-500">
+                        Biaya asuransi dihitung otomatis sebesar 0,5% dari nilai barang.
+                    </p>
+                </div>
+            </div>
 
             {{-- COD --}}
             <section class="p-5 sm:p-6 border-b border-slate-100">
@@ -432,6 +468,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             // POPUP INFO VOLUMETRIK
             lucide.createIcons();
+            const insuranceCheckbox = document.getElementById('is_insured');
+            const insuranceWrapper = document.getElementById('insurance-value-wrapper');
+
+            insuranceCheckbox?.addEventListener('change', function() {
+                insuranceWrapper.classList.toggle('hidden', !this.checked);
+            });
             const btnInfo = document.getElementById('btn-info-volumetrik');
             const popupInfo = document.getElementById('popup-volumetrik');
             const dragHeader = document.getElementById('drag-volumetrik');

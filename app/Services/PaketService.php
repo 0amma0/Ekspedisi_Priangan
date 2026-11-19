@@ -71,7 +71,7 @@ class PaketService
             $beratDasar = max($aktual, $volumetrik);
         }
         $beratTertagih = max(1, ceil(round($beratDasar, 2)));
-        return DB::transaction(function () use ($data, $admin) {
+        return DB::transaction(function () use ($data, $admin, $beratDasar, $volumetrik) {
 
             $manual = filled($data['zona_manual'] ?? null);
 
@@ -104,10 +104,20 @@ class PaketService
 
             $berat = (float) $data['weight_kg'];
 
-            $tertagih = $this->hitungBeratTertagih($berat);
+            $tertagih = $this->hitungBeratTertagih($beratDasar);
 
             $nilaiCod = $data['is_cod']
                 ? (int) $data['cod_amount']
+                : 0;
+            // Perhitungan asuransi 0,5% dari nilai barang
+            $isInsured = (bool) ($data['is_insured'] ?? false);
+
+            $declaredValue = $isInsured
+                ? (float) $data['declared_value']
+                : null;
+
+            $insuranceCost = $isInsured
+                ? (int) round($declaredValue * 0.005)
                 : 0;
 
             $paket = Package::create([
@@ -125,6 +135,11 @@ class PaketService
                 'is_zone_manual' => $isManual,
 
                 'weight_kg' => $berat,
+                'length_cm' => $data['length_cm'] ?? null,
+                'width_cm' => $data['width_cm'] ?? null,
+                'height_cm' => $data['height_cm'] ?? null,
+                'volumetric_weight_kg' => $volumetrik,
+                'base_weight_kg' => $beratDasar,
                 'billable_weight' => $tertagih,
 
                 'service_type' => $data['service_type'],
@@ -139,6 +154,11 @@ class PaketService
                 'is_cod' => $data['is_cod'],
                 'cod_amount' => $nilaiCod,
                 'cod_fee' => $this->hitungBiayaCod($nilaiCod),
+
+                // Data asuransi
+                'is_insured' => $isInsured,
+                'declared_value' => $declaredValue,
+                'insurance_cost' => $insuranceCost,
 
                 'status' => 'Diterima',
                 'created_by_user_id' => $admin->id,

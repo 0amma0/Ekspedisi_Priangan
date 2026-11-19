@@ -11,6 +11,7 @@ use App\Services\PaketDitolak;
 use App\Services\PaketService;
 use App\Services\ZonaService;
 use App\Support\Telepon;
+use Dflydev\DotAccessData\Data;
 use Illuminate\Http\Request;
 
 class PaketController extends Controller
@@ -48,12 +49,15 @@ class PaketController extends Controller
             'length_cm' => 'nullable|numeric|gt:0|max:10000|required_with:width_cm,height_cm',
             'width_cm'  => 'nullable|numeric|gt:0|max:10000|required_with:length_cm,height_cm',
             'height_cm' => 'nullable|numeric|gt:0|max:10000|required_with:length_cm,width_cm',
+            'is_insured' => 'nullable|boolean',
+            'declared_value' => 'required_if:is_insured,1|nullable|numeric|min:1',
         ], [
             'customer_id.required' => 'Pilih pelanggan pengirim.',
             'weight_kg.gt' => 'Berat harus lebih dari 0.',
             'cod_amount.required_if' => 'Nilai COD wajib diisi bila paket COD.',
         ]);
         $data['is_cod'] = $r->boolean('is_cod');
+        $data['is_insured'] = $r->boolean('is_insured');
 
         try {
             $paket = $svc->buat($data, $r->user());

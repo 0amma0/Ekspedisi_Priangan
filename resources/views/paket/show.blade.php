@@ -206,11 +206,6 @@
                         </div>
                     </div>
 
-                    <p class="text-xs text-slate-500 leading-relaxed">
-                        Berat dasar menggunakan nilai terbesar antara berat aktual
-                        dan berat volumetrik. Berat ditagih mengikuti pembulatan
-                        sistem ekspedisi.
-                    </p>
                 </div>
 
                 {{-- Jenis Layanan --}}
