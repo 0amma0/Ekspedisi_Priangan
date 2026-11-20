@@ -3,7 +3,6 @@
 @section('isi')
     <div class="max-w-5xl mx-auto space-y-6 pb-8">
 
-        {{-- HEADER --}}
         <div>
             <a href="{{ url('/paket') }}"
                 class="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-amber-800 mb-4 transition">
@@ -17,12 +16,11 @@
             </p>
         </div>
 
-        {{-- FORM --}}
         <form method="POST" action="{{ url('/paket') }}"
             class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             @csrf
 
-            {{-- PENGIRIM --}}
+            {{-- pengirim --}}
             <section class="p-5 sm:p-6 border-b border-slate-100">
                 <div class="flex items-center gap-3 mb-5">
                     <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
@@ -61,7 +59,7 @@
                 </div>
             </section>
 
-            {{-- PENERIMA --}}
+            {{-- penerima --}}
             <section class="p-5 sm:p-6 border-b border-slate-100">
                 <div class="flex items-center gap-3 mb-5">
                     <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
@@ -75,9 +73,9 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     @foreach ([
-            'recipient_name' => ['label' => 'Nama Penerima', 'placeholder' => 'Nama lengkap penerima'],
-            'recipient_phone' => ['label' => 'Nomor Telepon Penerima', 'placeholder' => '081234567890'],
-        ] as $field => $meta)
+                        'recipient_name' => ['label' => 'Nama Penerima', 'placeholder' => 'Nama lengkap penerima'],
+                        'recipient_phone' => ['label' => 'Nomor Telepon Penerima', 'placeholder' => '081234567890'],
+                    ] as $field => $meta)
                         <div>
                             <label for="{{ $field }}" class="block text-sm font-medium text-slate-700 mb-2">
                                 {{ $meta['label'] }}
@@ -107,7 +105,7 @@
                 </div>
             </section>
 
-            {{-- TUJUAN PENGIRIMAN --}}
+            {{-- tujuan & zona --}}
             <section class="p-5 sm:p-6 border-b border-slate-100">
                 <div class="flex items-center gap-3 mb-5">
                     <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
@@ -138,7 +136,7 @@
                     <span>Masukkan kota tujuan untuk mencari zona tarif.</span>
                 </div>
 
-                {{-- ZONA MANUAL (muncul jika kota tidak ditemukan) --}}
+                {{-- zona manual --}}
                 <div id="zona-manual-wrapper" class="hidden mt-4">
                     <label for="zona_manual" class="block text-sm font-medium text-slate-700 mb-2">
                         Pilih Zona Manual
@@ -159,7 +157,7 @@
                 <input type="hidden" name="zone_id" id="zone_id" value="{{ old('zone_id') }}">
             </section>
 
-            {{-- DETAIL PAKET --}}
+            {{-- detail paket --}}
             <section class="p-5 sm:p-6 border-b border-slate-100">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
@@ -171,7 +169,7 @@
                     </div>
                 </div>
 
-                {{-- UKURAN --}}
+                {{-- dimensi --}}
                 <div class="mb-6">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="text-sm font-semibold text-slate-700">Ukuran Paket</h3>
@@ -180,10 +178,10 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         @foreach ([
-            'length_cm' => 'Panjang',
-            'width_cm' => 'Lebar',
-            'height_cm' => 'Tinggi',
-        ] as $field => $label)
+                            'length_cm' => 'Panjang',
+                            'width_cm' => 'Lebar',
+                            'height_cm' => 'Tinggi',
+                        ] as $field => $label)
                             <div>
                                 <label for="{{ $field }}" class="block text-sm font-medium text-slate-700 mb-2">
                                     {{ $label }}
@@ -200,7 +198,7 @@
                         @endforeach
                     </div>
 
-                    {{-- TOMBOL INFO VOLUMETRIK --}}
+                    {{-- volumetrik --}}
                     <div class="mt-4">
                         <button type="button" id="btn-info-volumetrik"
                             class="inline-flex items-center gap-2 text-sm text-slate-700 hover:bg-purple-50 px-3 py-2 rounded-lg border border-purple-200 transition">
@@ -209,7 +207,6 @@
                         </button>
                     </div>
 
-                    {{-- POPUP VOLUMETRIK --}}
                     <div id="popup-volumetrik"
                         class="hidden fixed z-9999] w-[320px] max-w-[90vw] bg-white border border-slate-200 text-slate-700 rounded-2xl shadow-2xl overflow-hidden"
                         style="top:120px;left:120px;">
@@ -265,7 +262,7 @@
                     </div>
                 </div>
 
-                {{-- BERAT DAN LAYANAN --}}
+                {{-- berat & layanan --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="weight_kg" class="block text-sm font-medium text-slate-700 mb-2">
@@ -297,7 +294,7 @@
                 </div>
             </section>
 
-            {{-- ASURANSI --}}
+            {{-- asuransi --}}
             <section class="border-b border-slate-100 p-5 sm:p-6">
                 <div class="flex items-start gap-3">
                     <input type="checkbox" name="is_insured" id="is_insured" value="1" @checked(old('is_insured'))
@@ -332,7 +329,7 @@
                 </div>
             </section>
 
-            {{-- COD --}}
+            {{-- cod --}}
             <section class="p-5 sm:p-6 border-b border-slate-100">
                 <div class="flex items-center gap-3 mb-5">
                     <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center">
@@ -372,7 +369,7 @@
                 </div>
             </section>
 
-            {{-- TOMBOL AKSI --}}
+            {{-- tombol simpan --}}
             <div class="bg-slate-50 p-5 sm:px-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                 <a href="{{ url('/paket') }}"
                     class="inline-flex items-center justify-center border border-slate-300 hover:bg-slate-100 text-slate-700 px-5 py-3 rounded-xl text-sm font-medium transition">
@@ -391,66 +388,68 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const refreshIcons = () => window.lucide && lucide.createIcons();
-            refreshIcons();
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.lucide) lucide.createIcons();
 
-            // 1. TOGGLE INPUT NILAI ASURANSI
+            // asuransi
             const insuranceCheckbox = document.getElementById('is_insured');
             const insuranceWrapper = document.getElementById('insurance-value-wrapper');
 
-            insuranceCheckbox?.addEventListener('change', () => {
-                insuranceWrapper.classList.toggle('hidden', !insuranceCheckbox.checked);
-            });
+            if (insuranceCheckbox) {
+                insuranceCheckbox.addEventListener('change', function() {
+                    insuranceWrapper.classList.toggle('hidden', !this.checked);
+                });
+            }
 
-            // 2. POPUP INFO VOLUMETRIK (BUKA, TUTUP, & DRAG)
+            // popup volumetrik & drag
             const btnInfo = document.getElementById('btn-info-volumetrik');
             const popupInfo = document.getElementById('popup-volumetrik');
             const dragHeader = document.getElementById('drag-volumetrik');
             const closeInfo = document.getElementById('close-volumetrik');
 
-            btnInfo?.addEventListener('click', () => {
-                popupInfo.classList.toggle('hidden');
-                refreshIcons();
-            });
+            if (btnInfo) {
+                btnInfo.addEventListener('click', function() {
+                    popupInfo.classList.toggle('hidden');
+                    if (window.lucide) lucide.createIcons();
+                });
+            }
 
-            closeInfo?.addEventListener('click', () => {
-                popupInfo.classList.add('hidden');
-            });
+            if (closeInfo) {
+                closeInfo.addEventListener('click', function() {
+                    popupInfo.classList.add('hidden');
+                });
+            }
 
             let dragging = false;
             let offsetX = 0;
             let offsetY = 0;
 
-            dragHeader?.addEventListener('pointerdown', (e) => {
-                if (e.target.closest('button')) return;
-                dragging = true;
+            if (dragHeader) {
+                dragHeader.addEventListener('pointerdown', function(e) {
+                    if (e.target.closest('button')) return;
+                    dragging = true;
 
-                const rect = popupInfo.getBoundingClientRect();
-                offsetX = e.clientX - rect.left;
-                offsetY = e.clientY - rect.top;
-                dragHeader.setPointerCapture(e.pointerId);
-            });
-
-            dragHeader?.addEventListener('pointermove', (e) => {
-                if (!dragging) return;
-
-                const maxX = window.innerWidth - popupInfo.offsetWidth;
-                const maxY = window.innerHeight - popupInfo.offsetHeight;
-                const x = Math.max(0, Math.min(e.clientX - offsetX, maxX));
-                const y = Math.max(0, Math.min(e.clientY - offsetY, maxY));
-
-                popupInfo.style.left = `${x}px`;
-                popupInfo.style.top = `${y}px`;
-            });
-
-            ['pointerup', 'pointercancel'].forEach((eventName) => {
-                dragHeader?.addEventListener(eventName, () => {
-                    dragging = false;
+                    const rect = popupInfo.getBoundingClientRect();
+                    offsetX = e.clientX - rect.left;
+                    offsetY = e.clientY - rect.top;
+                    dragHeader.setPointerCapture(e.pointerId);
                 });
-            });
 
-            // 3. PENCARIAN ZONA OTOMATIS BERDASARKAN KOTA TUJUAN
+                dragHeader.addEventListener('pointermove', function(e) {
+                    if (!dragging) return;
+
+                    let x = Math.max(0, Math.min(e.clientX - offsetX, window.innerWidth - popupInfo.offsetWidth));
+                    let y = Math.max(0, Math.min(e.clientY - offsetY, window.innerHeight - popupInfo.offsetHeight));
+
+                    popupInfo.style.left = x + 'px';
+                    popupInfo.style.top = y + 'px';
+                });
+
+                dragHeader.addEventListener('pointerup', () => dragging = false);
+                dragHeader.addEventListener('pointercancel', () => dragging = false);
+            }
+
+            // cek zona otomatis
             const kotaInput = document.getElementById('destination_city');
             const zonaInfo = document.getElementById('zona-info');
             const zonaManual = document.getElementById('zona-manual-wrapper');
@@ -462,12 +461,9 @@
             let requestController = null;
 
             function renderZonaInfo(icon, message) {
-                zonaInfo.innerHTML = `
-            <i data-lucide="${icon}" class="w-4 h-4 shrink-0 mt-0.5"></i>
-            <span></span>
-        `;
+                zonaInfo.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 shrink-0 mt-0.5"></i><span></span>`;
                 zonaInfo.querySelector('span').textContent = message;
-                refreshIcons();
+                if (window.lucide) lucide.createIcons();
             }
 
             function aktifkanManual() {
@@ -485,65 +481,70 @@
                 zoneId.value = '';
             }
 
-            kotaInput?.addEventListener('input', () => {
-                clearTimeout(timer);
-                requestController?.abort();
-                requestController = null;
+            if (kotaInput) {
+                kotaInput.addEventListener('input', function() {
+                    clearTimeout(timer);
 
-                resetZona();
+                    if (requestController) {
+                        requestController.abort();
+                        requestController = null;
+                    }
 
-                const kota = kotaInput.value.trim();
-                if (!kota) {
-                    renderZonaInfo('info', 'Masukkan kota tujuan untuk mencari zona tarif.');
-                    return;
-                }
+                    resetZona();
 
-                renderZonaInfo('loader-circle', 'Sedang mencari zona tarif...');
+                    const kota = kotaInput.value.trim();
+                    if (!kota) {
+                        renderZonaInfo('info', 'Masukkan kota tujuan untuk mencari zona tarif.');
+                        return;
+                    }
 
-                // Tunggu 500ms setelah user selesai mengetik (debounce) sebelum panggil API
-                timer = setTimeout(async () => {
-                    requestController = new AbortController();
+                    renderZonaInfo('loader-circle', 'Sedang mencari zona tarif...');
 
-                    try {
-                        const url = `{{ route('zona.cek') }}?kota=${encodeURIComponent(kota)}`;
-                        const response = await fetch(url, {
-                            signal: requestController.signal
-                        });
+                    // debounce 500ms
+                    timer = setTimeout(async function() {
+                        requestController = new AbortController();
 
-                        if (!response.ok) throw new Error('Permintaan gagal');
+                        try {
+                            const url = `{{ route('zona.cek') }}?kota=${encodeURIComponent(kota)}`;
+                            const response = await fetch(url, {
+                                signal: requestController.signal
+                            });
 
-                        const data = await response.json();
-                        if (kotaInput.value.trim() !== kota) return;
+                            if (!response.ok) throw new Error('Gagal mengambil data');
 
-                        if (data.status === 'found') {
-                            const tarifFormatted = Number(data.tariff).toLocaleString('id-ID');
-                            renderZonaInfo('check-circle',
-                                `${data.message}: ${data.zone_name}, tarif Rp${tarifFormatted}/kg`
+                            const data = await response.json();
+                            if (kotaInput.value.trim() !== kota) return;
+
+                            if (data.status === 'found') {
+                                const tarif = Number(data.tariff).toLocaleString('id-ID');
+                                renderZonaInfo('check-circle',
+                                    `${data.message}: ${data.zone_name}, tarif Rp${tarif}/kg`
                                 );
 
-                            zoneId.value = data.zone_id;
-                            isManual.value = '0';
-                            zonaSelect.disabled = true;
-                            zonaManual.classList.add('hidden');
-                        } else {
-                            renderZonaInfo('alert-circle', data.message);
+                                zoneId.value = data.zone_id;
+                                isManual.value = '0';
+                                zonaSelect.disabled = true;
+                                zonaManual.classList.add('hidden');
+                            } else {
+                                renderZonaInfo('alert-circle', data.message);
+                                aktifkanManual();
+                            }
+                        } catch (error) {
+                            if (error.name === 'AbortError' || kotaInput.value.trim() !== kota)
+                                return;
+
+                            renderZonaInfo('alert-triangle',
+                                'Layanan pencarian zona tidak tersedia. Silakan pilih zona manual.'
+                            );
                             aktifkanManual();
                         }
-                    } catch (error) {
-                        if (error.name === 'AbortError' || kotaInput.value.trim() !== kota)
-                            return;
+                    }, 500);
+                });
 
-                        renderZonaInfo('alert-triangle',
-                            'Layanan pencarian zona tidak tersedia. Silakan pilih zona manual.'
-                            );
-                        aktifkanManual();
-                    }
-                }, 500);
-            });
-
-            // Jalankan ulang pencarian zona jika form kembali karena error validasi (old input)
-            if (kotaInput?.value.trim()) {
-                kotaInput.dispatchEvent(new Event('input'));
+                // cek ulang old input
+                if (kotaInput.value.trim()) {
+                    kotaInput.dispatchEvent(new Event('input'));
+                }
             }
         });
     </script>

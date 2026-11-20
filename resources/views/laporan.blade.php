@@ -2,22 +2,24 @@
 
 @section('isi')
     @php
-        $statusLabels = ['Diterima', 'Transit', 'Dikirim', 'Terkirim', 'Gagal Kirim', 'Retur'];
+        // format rupiah
+        $rupiah = fn($angka) => 'Rp ' . number_format($angka ?? 0, 0, ',', '.');
 
+        // data chart status
+        $statusLabels = ['Diterima', 'Transit', 'Dikirim', 'Terkirim', 'Gagal Kirim', 'Retur'];
         $statusValues = collect($statusLabels)->map(fn($status) => (int) ($perStatus[$status] ?? 0))->values()->all();
 
+        // data chart zona
         $zonaLabels = $pendapatan->map(fn($z) => $z->zona ?? 'Tanpa zona')->values()->all();
-
         $ongkirValues = $pendapatan->map(fn($z) => (float) ($z->ongkir ?? 0))->values()->all();
-
         $biayaCodValues = $pendapatan->map(fn($z) => (float) ($z->biaya_cod ?? 0))->values()->all();
 
+        // data chart cod kurir
         $kurirLabels = $rekap->map(fn($k) => ($k->code ?? '-') . ' - ' . ($k->name ?? '-'))->values()->all();
-
         $belumValues = $rekap->map(fn($k) => (float) ($k->belum ?? 0))->values()->all();
-
         $sudahValues = $rekap->map(fn($k) => (float) ($k->sudah ?? 0))->values()->all();
 
+        // hitung total ringkasan
         $totalPaket = $perStatus->sum();
         $totalPendapatan = $pendapatan->sum('ongkir');
         $totalBiayaCod = $pendapatan->sum('biaya_cod');
@@ -28,7 +30,7 @@
 
     <div class="space-y-6">
 
-        {{-- HEADER --}}
+        {{-- header --}}
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <div class="flex items-center gap-2 text-amber-800">
@@ -48,22 +50,17 @@
             </div>
         </div>
 
-        {{-- FILTER PERIODE --}}
+        {{-- filter tanggal --}}
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <form method="GET" action="{{ url()->current() }}" class="flex flex-col gap-4 sm:flex-row sm:items-end">
-
                 <div class="flex-1">
-                    <label for="dari" class="mb-2 block text-sm font-semibold text-slate-700">
-                        Tanggal Mulai
-                    </label>
+                    <label for="dari" class="mb-2 block text-sm font-semibold text-slate-700">Tanggal Mulai</label>
                     <input type="date" name="dari" id="dari" value="{{ $dari }}"
                         class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-100">
                 </div>
 
                 <div class="flex-1">
-                    <label for="sampai" class="mb-2 block text-sm font-semibold text-slate-700">
-                        Tanggal Selesai
-                    </label>
+                    <label for="sampai" class="mb-2 block text-sm font-semibold text-slate-700">Tanggal Selesai</label>
                     <input type="date" name="sampai" id="sampai" value="{{ $sampai }}"
                         class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-100">
                 </div>
@@ -75,9 +72,8 @@
             </form>
         </div>
 
-        {{-- RINGKASAN --}}
+        {{-- kartu ringkasan --}}
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-slate-500">Total Paket</p>
@@ -88,9 +84,7 @@
                         </svg>
                     </div>
                 </div>
-                <p class="mt-3 text-3xl font-bold text-slate-800">
-                    {{ number_format($totalPaket, 0, ',', '.') }}
-                </p>
+                <p class="mt-3 text-3xl font-bold text-slate-800">{{ number_format($totalPaket, 0, ',', '.') }}</p>
                 <p class="mt-1 text-xs text-slate-400">Paket pada periode terpilih</p>
             </div>
 
@@ -104,9 +98,7 @@
                         </svg>
                     </div>
                 </div>
-                <p class="mt-3 text-2xl font-bold text-slate-800">
-                    Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
-                </p>
+                <p class="mt-3 text-2xl font-bold text-slate-800">{{ $rupiah($totalPendapatan) }}</p>
                 <p class="mt-1 text-xs text-slate-400">Akumulasi biaya pengiriman</p>
             </div>
 
@@ -120,9 +112,7 @@
                         </svg>
                     </div>
                 </div>
-                <p class="mt-3 text-2xl font-bold text-slate-800">
-                    Rp {{ number_format($totalBelum, 0, ',', '.') }}
-                </p>
+                <p class="mt-3 text-2xl font-bold text-slate-800">{{ $rupiah($totalBelum) }}</p>
                 <p class="mt-1 text-xs text-slate-400">Menunggu penyetoran kurir</p>
             </div>
 
@@ -136,23 +126,17 @@
                         </svg>
                     </div>
                 </div>
-                <p class="mt-3 text-2xl font-bold text-slate-800">
-                    Rp {{ number_format($totalSudah, 0, ',', '.') }}
-                </p>
+                <p class="mt-3 text-2xl font-bold text-slate-800">{{ $rupiah($totalSudah) }}</p>
                 <p class="mt-1 text-xs text-slate-400">COD yang sudah diterima admin</p>
             </div>
-
         </div>
 
-        {{-- GRAFIK STATUS DAN PENDAPATAN --}}
+        {{-- grafik status & zona --}}
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="mb-5">
                     <h2 class="font-bold text-slate-800">Statistik Status Paket</h2>
-                    <p class="mt-1 text-xs text-slate-500">
-                        Perbandingan jumlah paket berdasarkan status.
-                    </p>
+                    <p class="mt-1 text-xs text-slate-500">Perbandingan jumlah paket berdasarkan status.</p>
                 </div>
                 <div class="relative mx-auto h-72 max-w-md">
                     <canvas id="statusChart"></canvas>
@@ -162,37 +146,30 @@
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="mb-5">
                     <h2 class="font-bold text-slate-800">Pendapatan per Zona</h2>
-                    <p class="mt-1 text-xs text-slate-500">
-                        Perbandingan pendapatan ongkir dan biaya COD.
-                    </p>
+                    <p class="mt-1 text-xs text-slate-500">Perbandingan pendapatan ongkir dan biaya COD.</p>
                 </div>
                 <div class="relative h-72">
                     <canvas id="pendapatanChart"></canvas>
                 </div>
             </div>
-
         </div>
 
-        {{-- GRAFIK COD KURIR --}}
+        {{-- grafik cod kurir --}}
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="mb-5">
                 <h2 class="font-bold text-slate-800">Grafik Setoran COD per Kurir</h2>
-                <p class="mt-1 text-xs text-slate-500">
-                    Perbandingan nominal COD yang sudah dan belum disetor.
-                </p>
+                <p class="mt-1 text-xs text-slate-500">Perbandingan nominal COD yang sudah dan belum disetor.</p>
             </div>
             <div class="relative h-80">
                 <canvas id="codChart"></canvas>
             </div>
         </div>
 
-        {{-- TABEL PENDAPATAN --}}
+        {{-- tabel pendapatan zona --}}
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-100 p-5">
                 <h2 class="font-bold text-slate-800">Rincian Pendapatan per Zona</h2>
-                <p class="mt-1 text-xs text-slate-500">
-                    Detail biaya pengiriman berdasarkan zona tujuan.
-                </p>
+                <p class="mt-1 text-xs text-slate-500">Detail biaya pengiriman berdasarkan zona tujuan.</p>
             </div>
 
             <div class="overflow-x-auto">
@@ -208,17 +185,11 @@
                     <tbody>
                         @forelse ($pendapatan as $z)
                             <tr class="border-t border-slate-100 hover:bg-slate-50">
-                                <td class="p-3 font-medium text-slate-700">
-                                    {{ $z->zona ?? 'Tanpa zona' }}
-                                </td>
-                                <td class="p-3 text-right text-slate-600">
-                                    Rp {{ number_format($z->ongkir ?? 0, 0, ',', '.') }}
-                                </td>
-                                <td class="p-3 text-right text-slate-600">
-                                    Rp {{ number_format($z->biaya_cod ?? 0, 0, ',', '.') }}
-                                </td>
+                                <td class="p-3 font-medium text-slate-700">{{ $z->zona ?? 'Tanpa zona' }}</td>
+                                <td class="p-3 text-right text-slate-600">{{ $rupiah($z->ongkir) }}</td>
+                                <td class="p-3 text-right text-slate-600">{{ $rupiah($z->biaya_cod) }}</td>
                                 <td class="p-3 text-right font-semibold text-slate-800">
-                                    Rp {{ number_format(($z->ongkir ?? 0) + ($z->biaya_cod ?? 0), 0, ',', '.') }}
+                                    {{ $rupiah(($z->ongkir ?? 0) + ($z->biaya_cod ?? 0)) }}
                                 </td>
                             </tr>
                         @empty
@@ -233,14 +204,12 @@
             </div>
         </div>
 
-        {{-- TABEL DETAIL SETORAN COD --}}
+        {{-- tabel setoran cod --}}
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="font-bold text-slate-800">Detail Setoran COD per Kurir</h2>
-                    <p class="mt-1 text-xs text-slate-500">
-                        Rincian status penyetoran COD setiap kurir.
-                    </p>
+                    <p class="mt-1 text-xs text-slate-500">Rincian status penyetoran COD setiap kurir.</p>
                 </div>
 
                 <button id="btnPerforma" type="button"
@@ -263,20 +232,11 @@
                     <tbody>
                         @forelse ($rekap as $k)
                             <tr class="border-t border-slate-100 hover:bg-slate-50">
-                                <td class="p-3 font-medium text-slate-700">
-                                    {{ $k->code }} - {{ $k->name }}
-                                </td>
-
-                                <td class="p-3 text-right font-medium text-orange-700">
-                                    Rp {{ number_format($k->belum ?? 0, 0, ',', '.') }}
-                                </td>
-
-                                <td class="p-3 text-right font-medium text-emerald-700">
-                                    Rp {{ number_format($k->sudah ?? 0, 0, ',', '.') }}
-                                </td>
-
+                                <td class="p-3 font-medium text-slate-700">{{ $k->code }} - {{ $k->name }}</td>
+                                <td class="p-3 text-right font-medium text-orange-700">{{ $rupiah($k->belum) }}</td>
+                                <td class="p-3 text-right font-medium text-emerald-700">{{ $rupiah($k->sudah) }}</td>
                                 <td class="p-3 text-right font-bold text-slate-800">
-                                    Rp {{ number_format(($k->belum ?? 0) + ($k->sudah ?? 0), 0, ',', '.') }}
+                                    {{ $rupiah(($k->belum ?? 0) + ($k->sudah ?? 0)) }}
                                 </td>
                             </tr>
                         @empty
@@ -292,34 +252,24 @@
                         <tfoot class="border-t-2 border-slate-200 bg-slate-50 font-bold text-slate-800">
                             <tr>
                                 <td class="p-3">Total Keseluruhan</td>
-                                <td class="p-3 text-right text-orange-700">
-                                    Rp {{ number_format($totalBelum, 0, ',', '.') }}
-                                </td>
-                                <td class="p-3 text-right text-emerald-700">
-                                    Rp {{ number_format($totalSudah, 0, ',', '.') }}
-                                </td>
-                                <td class="p-3 text-right">
-                                    Rp {{ number_format($totalCod, 0, ',', '.') }}
-                                </td>
+                                <td class="p-3 text-right text-orange-700">{{ $rupiah($totalBelum) }}</td>
+                                <td class="p-3 text-right text-emerald-700">{{ $rupiah($totalSudah) }}</td>
+                                <td class="p-3 text-right">{{ $rupiah($totalCod) }}</td>
                             </tr>
                         </tfoot>
                     @endif
                 </table>
             </div>
         </div>
-
     </div>
-    {{-- POPUP PERFORMA KURIR --}}
+
+    {{-- popup performa kurir --}}
     <div id="modalPerforma" class="fixed inset-0 z-100] hidden items-center justify-center bg-black/50 p-4">
-
         <div class="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-
             <div class="flex items-center justify-between border-b p-5">
                 <div>
                     <h2 class="text-lg font-bold text-slate-800">Laporan Performa Kurir</h2>
-                    <p class="mt-1 text-xs text-slate-500">
-                        Persentase paket terkirim dan gagal kirim.
-                    </p>
+                    <p class="mt-1 text-xs text-slate-500">Persentase paket terkirim dan gagal kirim.</p>
                 </div>
                 <button id="tutupPerforma" type="button" class="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100">
                     ✕
@@ -347,9 +297,7 @@
                                 <tr class="border-t">
                                     <td class="p-3">
                                         <p class="font-semibold">{{ $item->courier->code ?? '-' }}</p>
-                                        <p class="text-xs text-slate-500">
-                                            {{ $item->courier->name ?? '-' }}
-                                        </p>
+                                        <p class="text-xs text-slate-500">{{ $item->courier->name ?? '-' }}</p>
                                     </td>
                                     <td class="p-3 text-center text-green-700">{{ $item->terkirim }}</td>
                                     <td class="p-3 text-center text-red-600">{{ $item->gagal }}</td>
@@ -381,73 +329,68 @@
         </div>
     </div>
 
-    {{-- CHART.JS --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // modal performa
             const modal = document.getElementById('modalPerforma');
 
-            function bukaPerforma() {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                document.body.classList.add('overflow-hidden');
+            function toggleModal(buka) {
+                modal.classList.toggle('hidden', !buka);
+                modal.classList.toggle('flex', buka);
+                document.body.classList.toggle('overflow-hidden', buka);
             }
 
-            function tutupPerforma() {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                document.body.classList.remove('overflow-hidden');
-            }
+            document.getElementById('btnPerforma')?.addEventListener('click', () => toggleModal(true));
+            document.getElementById('tutupPerforma')?.addEventListener('click', () => toggleModal(false));
+            document.getElementById('tutupPerformaBawah')?.addEventListener('click', () => toggleModal(false));
 
-            document.getElementById('btnPerforma')?.addEventListener('click', bukaPerforma);
-            document.getElementById('tutupPerforma')?.addEventListener('click', tutupPerforma);
-            document.getElementById('tutupPerformaBawah')?.addEventListener('click', tutupPerforma);
-
-            modal?.addEventListener('click', function(e) {
-                if (e.target === modal) tutupPerforma();
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) toggleModal(false);
             });
 
-            document.addEventListener('keydown', function(e) {
+            document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-                    tutupPerforma();
+                    toggleModal(false);
                 }
             });
 
-            const statusLabels = {!! json_encode($statusLabels, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
-            const statusValues = {!! json_encode($statusValues, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
+            // data dari blade
+            const statusLabels = @json($statusLabels);
+            const statusValues = @json($statusValues);
+            const zonaLabels = @json($zonaLabels);
+            const ongkirValues = @json($ongkirValues);
+            const biayaCodValues = @json($biayaCodValues);
+            const kurirLabels = @json($kurirLabels);
+            const belumValues = @json($belumValues);
+            const sudahValues = @json($sudahValues);
 
-            const zonaLabels = {!! json_encode($zonaLabels, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
-            const ongkirValues = {!! json_encode($ongkirValues, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
-            const biayaCodValues = {!! json_encode($biayaCodValues, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
-
-            const kurirLabels = {!! json_encode($kurirLabels, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
-            const belumValues = {!! json_encode($belumValues, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
-            const sudahValues = {!! json_encode($sudahValues, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
-
-            if (typeof Chart === 'undefined') {
-                console.error('Chart.js gagal dimuat.');
-                return;
-            }
+            if (typeof Chart === 'undefined') return;
 
             Chart.defaults.font.family = 'Inter, ui-sans-serif, system-ui, sans-serif';
             Chart.defaults.color = '#64748b';
 
-            // GRAFIK STATUS PAKET
+            const legendBottom = {
+                position: 'bottom',
+                labels: {
+                    usePointStyle: true,
+                    padding: 16
+                }
+            };
+
+            const formatRupiahSingkat = (val) => 'Rp ' + new Intl.NumberFormat('id-ID', {
+                notation: 'compact'
+            }).format(val);
+
+            // chart status paket
             new Chart(document.getElementById('statusChart'), {
                 type: 'doughnut',
                 data: {
                     labels: statusLabels,
                     datasets: [{
                         data: statusValues,
-                        backgroundColor: [
-                            '#f59e0b',
-                            '#3b82f6',
-                            '#8b5cf6',
-                            '#10b981',
-                            '#ef4444',
-                            '#64748b'
-                        ],
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ef4444', '#64748b'],
                         borderWidth: 0,
                         hoverOffset: 6
                     }]
@@ -457,23 +400,18 @@
                     maintainAspectRatio: false,
                     cutout: '68%',
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 16
-                            }
-                        }
+                        legend: legendBottom
                     }
                 }
             });
 
-            // GRAFIK PENDAPATAN ZONA
+            // chart pendapatan zona
             new Chart(document.getElementById('pendapatanChart'), {
                 type: 'bar',
                 data: {
                     labels: zonaLabels,
-                    datasets: [{
+                    datasets: [
+                        {
                             label: 'Ongkir',
                             data: ongkirValues,
                             backgroundColor: '#b45309',
@@ -493,41 +431,22 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return 'Rp ' + new Intl.NumberFormat('id-ID', {
-                                        notation: 'compact'
-                                    }).format(value);
-                                }
-                            },
-                            grid: {
-                                color: '#f1f5f9'
-                            }
+                            ticks: { callback: formatRupiahSingkat },
+                            grid: { color: '#f1f5f9' }
                         },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
+                        x: { grid: { display: false } }
                     },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 16
-                            }
-                        }
-                    }
+                    plugins: { legend: legendBottom }
                 }
             });
 
-            // GRAFIK SETORAN COD PER KURIR
+            // chart setoran cod kurir
             new Chart(document.getElementById('codChart'), {
                 type: 'bar',
                 data: {
                     labels: kurirLabels,
-                    datasets: [{
+                    datasets: [
+                        {
                             label: 'Belum Disetor',
                             data: belumValues,
                             backgroundColor: '#f59e0b',
@@ -548,35 +467,14 @@
                     scales: {
                         x: {
                             beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return 'Rp ' + new Intl.NumberFormat('id-ID', {
-                                        notation: 'compact'
-                                    }).format(value);
-                                }
-                            },
-                            grid: {
-                                color: '#f1f5f9'
-                            }
+                            ticks: { callback: formatRupiahSingkat },
+                            grid: { color: '#f1f5f9' }
                         },
-                        y: {
-                            grid: {
-                                display: false
-                            }
-                        }
+                        y: { grid: { display: false } }
                     },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 16
-                            }
-                        }
-                    }
+                    plugins: { legend: legendBottom }
                 }
             });
-
         });
     </script>
 @endsection

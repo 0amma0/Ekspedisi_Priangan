@@ -418,13 +418,11 @@
                     </svg>
                 </button>
 
-                <a href="{{ url('/') }}" class="brand">
                     <div class="brand-logo">PK</div>
                     <div>
                         <p class="brand-title">Priangan Kilat Express</p>
                         <p class="brand-subtitle">Sistem Informasi Logistik</p>
                     </div>
-                </a>
             </div>
 
             @auth

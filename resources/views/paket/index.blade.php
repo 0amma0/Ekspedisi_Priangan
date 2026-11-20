@@ -3,7 +3,7 @@
 @section('isi')
     <div class="space-y-5">
 
-        {{-- Header --}}
+        {{-- Header Halaman --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">Daftar Paket</h1>
@@ -19,24 +19,20 @@
             </a>
         </div>
 
-        {{-- Pencarian --}}
+        {{-- Filter & Pencarian Resi --}}
         <div class="bg-white rounded-xl border border-slate-200 p-4">
             <form method="GET" action="{{ url('/paket') }}" class="flex flex-col sm:flex-row gap-3">
-
                 <div class="relative flex-1">
                     <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-
                     <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari nomor resi..."
                         class="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700">
                 </div>
+
                 <select name="filter" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm">
-                    <option value="semua" {{ $filter === 'semua' ? 'selected' : '' }}>
-                        Semua Paket
-                    </option>
-                    <option value="tertahan" {{ $filter === 'tertahan' ? 'selected' : '' }}>
-                        Transit Tertahan
-                    </option>
+                    <option value="semua" @selected($filter === 'semua')>Semua Paket</option>
+                    <option value="tertahan" @selected($filter === 'tertahan')>Transit Tertahan</option>
                 </select>
+
                 <button type="submit"
                     class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition">
                     Cari Paket
@@ -51,9 +47,8 @@
             </form>
         </div>
 
-        {{-- Tabel Paket --}}
+        {{-- Tabel Daftar Paket --}}
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-
             <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
                 <div>
                     <h2 class="font-semibold text-slate-800">Data Pengiriman</h2>
@@ -67,28 +62,20 @@
 
             <div class="overflow-x-auto">
                 <table class="w-full text-sm whitespace-nowrap">
-
                     <thead class="bg-amber-50 text-amber-900">
                         <tr class="text-left">
-                            <th class="px-4 py-3 font-semibold">Nomor Resi</th>
-                            <th class="px-4 py-3 font-semibold">Penerima</th>
-                            <th class="px-4 py-3 font-semibold">Telepon</th>
-                            <th class="px-4 py-3 font-semibold">Kota Tujuan</th>
-                            <th class="px-4 py-3 font-semibold">Berat</th>
-                            <th class="px-4 py-3 font-semibold">Verifikasi</th>
-                            <th class="px-4 py-3 font-semibold">Status</th>
-                            <th class="px-4 py-3 font-semibold">Gagal</th>
-                            <th class="px-4 py-3 font-semibold">Kurir</th>
+                            @foreach (['Nomor Resi', 'Penerima', 'Telepon', 'Kota Tujuan', 'Berat', 'Verifikasi', 'Status', 'Gagal', 'Kurir'] as $kolom)
+                                <th class="px-4 py-3 font-semibold">{{ $kolom }}</th>
+                            @endforeach
                             <th class="px-4 py-3 font-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
 
                     <tbody class="divide-y divide-slate-100">
-
                         @forelse ($pakets as $p)
                             <tr class="hover:bg-amber-50/40 transition">
 
-                                {{-- Resi --}}
+                                {{-- Nomor Resi --}}
                                 <td class="px-4 py-3">
                                     <a href="{{ url('/paket/' . $p->id) }}"
                                         class="font-semibold text-amber-800 hover:text-amber-950">
@@ -96,44 +83,31 @@
                                     </a>
                                 </td>
 
-                                {{-- Penerima --}}
-                                <td class="px-4 py-3 text-slate-700">
-                                    {{ $p->recipient_name }}
-                                </td>
-
-                                {{-- Telepon --}}
+                                {{-- Info Penerima & Tujuan --}}
+                                <td class="px-4 py-3 text-slate-700">{{ $p->recipient_name }}</td>
                                 <td class="px-4 py-3 text-slate-600">
                                     {{ \App\Support\Telepon::rapikan($p->recipient_phone ?? '') ?: '-' }}
                                 </td>
-
-                                {{-- Kota --}}
-                                <td class="px-4 py-3 text-slate-600">
-                                    {{ $p->destination_city }}
-                                </td>
-
-                                {{-- Berat --}}
+                                <td class="px-4 py-3 text-slate-600">{{ $p->destination_city }}</td>
                                 <td class="px-4 py-3 text-slate-600">
                                     {{ $p->weight_kg !== null ? $p->weight_kg . ' kg' : '-' }}
                                 </td>
 
-                                {{-- Verifikasi --}}
+                                {{-- Status Verifikasi Berat/Data --}}
                                 <td class="px-4 py-3">
-                                    @if ($p->needs_verification || $p->weight_kg === null)
-                                        <span
-                                            class="inline-flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2.5 py-1 rounded-full text-xs font-medium">
-                                            <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
-                                            Perlu Verifikasi
-                                        </span>
-                                    @else
-                                        <span
-                                            class="inline-flex items-center gap-1 bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-medium">
-                                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-                                            Lengkap
-                                        </span>
-                                    @endif
+                                    @php
+                                        $perluVerifikasi = $p->needs_verification || $p->weight_kg === null;
+                                    @endphp
+
+                                    <span
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium {{ $perluVerifikasi ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800' }}">
+                                        <i data-lucide="{{ $perluVerifikasi ? 'alert-circle' : 'check-circle' }}"
+                                            class="w-3.5 h-3.5"></i>
+                                        {{ $perluVerifikasi ? 'Perlu Verifikasi' : 'Lengkap' }}
+                                    </span>
                                 </td>
 
-                                {{-- Status --}}
+                                {{-- Status Pengiriman --}}
                                 <td class="px-4 py-3">
                                     @php
                                         $statusStyle = match ($p->status) {
@@ -162,21 +136,16 @@
                                     </div>
                                 </td>
 
-                                {{-- Gagal --}}
-                                <td class="px-4 py-3 text-center text-slate-600">
-                                    {{ $p->failed_attempts }}
-                                </td>
+                                {{-- Percobaan Gagal & Nama Kurir --}}
+                                <td class="px-4 py-3 text-center text-slate-600">{{ $p->failed_attempts }}</td>
+                                <td class="px-4 py-3 text-slate-600">{{ $p->courier?->name ?? '-' }}</td>
 
-                                {{-- Kurir --}}
-                                <td class="px-4 py-3 text-slate-600">
-                                    {{ $p->courier?->name ?? '-' }}
-                                </td>
-
-                                {{-- Aksi --}}
+                                {{-- Tombol Aksi sesuai alur status paket --}}
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-center gap-2">
 
                                         @if ($p->status === 'Diterima')
+                                            {{-- Tahap 1: Pindahkan paket masuk ke gudang transit --}}
                                             <form method="POST" action="{{ url('/paket/' . $p->id . '/transit') }}">
                                                 @csrf
                                                 <button type="submit"
@@ -186,6 +155,7 @@
                                                 </button>
                                             </form>
                                         @elseif ($p->status === 'Transit' || ($p->status === 'Gagal Kirim' && $p->failed_attempts < 2))
+                                            {{-- Tahap 2: Tugaskan kurir (boleh kirim ulang jika gagal kurang dari 2x) --}}
                                             <form method="POST" action="{{ url('/paket/' . $p->id . '/tugaskan') }}"
                                                 class="flex items-center gap-1">
                                                 @csrf
@@ -205,6 +175,7 @@
                                                 </button>
                                             </form>
                                         @elseif ($p->status === 'Gagal Kirim')
+                                            {{-- Tahap 3: Jika gagal kirim sudah >= 2x, kembalikan ke pengirim (Retur) --}}
                                             <form method="POST" action="{{ url('/paket/' . $p->id . '/retur') }}"
                                                 onsubmit="return confirm('Ubah paket ini ke status Retur?')">
                                                 @csrf
@@ -221,7 +192,6 @@
                                     </div>
                                 </td>
                             </tr>
-
                         @empty
                             <tr>
                                 <td colspan="10" class="px-4 py-12 text-center">
@@ -233,7 +203,6 @@
                                 </td>
                             </tr>
                         @endforelse
-
                     </tbody>
                 </table>
             </div>
@@ -242,14 +211,11 @@
             <div class="px-5 py-4 border-t border-slate-100">
                 {{ $pakets->links() }}
             </div>
-
         </div>
     </div>
 
-    {{-- Lucide Icons --}}
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     </script>
 @endsection
-```

@@ -1,10 +1,13 @@
-```php
 @extends('layout')
 
 @section('isi')
+    @php
+        $isAdmin = auth()->user()->role === 'admin';
+    @endphp
+
     <div class="space-y-6">
 
-        {{-- Header --}}
+        {{-- HEADER --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <p class="text-sm text-amber-700 font-medium mb-1">Manajemen Pengguna</p>
@@ -14,7 +17,7 @@
                 </p>
             </div>
 
-            @if (auth()->user()->role === 'admin')
+            @if ($isAdmin)
                 <a href="{{ url('/kurir/create') }}"
                     class="inline-flex items-center justify-center gap-2 bg-amber-800 hover:bg-amber-900 text-white px-4 py-3 rounded-xl text-sm font-semibold transition">
                     <i data-lucide="user-plus" class="w-4 h-4"></i>
@@ -23,42 +26,38 @@
             @endif
         </div>
 
-        {{-- Ringkasan --}}
+        {{-- RINGKASAN STATISTIK --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-            <div class="bg-white border border-slate-200 rounded-2xl p-5">
-                <div class="flex items-center gap-3">
-                    <div class="p-3 bg-amber-100 text-amber-700 rounded-xl">
-                        <i data-lucide="users" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-500">Total Kurir</p>
-                        <p class="text-2xl font-bold text-slate-800">
-                            {{ $kurirs->count() }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white border border-slate-200 rounded-2xl p-5">
-                <div class="flex items-center gap-3">
-                    <div class="p-3 bg-green-100 text-green-700 rounded-xl">
-                        <i data-lucide="user-check" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-500">Kurir Aktif</p>
-                        <p class="text-2xl font-bold text-slate-800">
-                            {{ $kurirs->where('is_active', true)->count() }}
-                        </p>
+            @foreach ([
+            [
+                'label' => 'Total Kurir',
+                'total' => $kurirs->count(),
+                'icon' => 'users',
+                'badge' => 'bg-amber-100 text-amber-700',
+            ],
+            [
+                'label' => 'Kurir Aktif',
+                'total' => $kurirs->where('is_active', true)->count(),
+                'icon' => 'user-check',
+                'badge' => 'bg-green-100 text-green-700',
+            ],
+        ] as $stat)
+                <div class="bg-white border border-slate-200 rounded-2xl p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 {{ $stat['badge'] }} rounded-xl">
+                            <i data-lucide="{{ $stat['icon'] }}" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">{{ $stat['label'] }}</p>
+                            <p class="text-2xl font-bold text-slate-800">{{ $stat['total'] }}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-
+            @endforeach
         </div>
 
-        {{-- Tabel Kurir --}}
+        {{-- TABEL KURIR --}}
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-
             <div class="p-5 border-b border-slate-200">
                 <h2 class="font-semibold text-slate-800">Daftar Kurir</h2>
                 <p class="text-xs text-slate-500 mt-1">
@@ -75,7 +74,7 @@
                             <th class="px-5 py-4 font-semibold">Telepon</th>
                             <th class="px-5 py-4 font-semibold">Status</th>
 
-                            @if (auth()->user()->role === 'admin')
+                            @if ($isAdmin)
                                 <th class="px-5 py-4 font-semibold">Kelola Akun</th>
                                 <th class="px-5 py-4 font-semibold text-center">Aksi</th>
                             @endif
@@ -85,7 +84,6 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($kurirs as $k)
                             <tr class="hover:bg-amber-50/40 transition-colors">
-
                                 <td class="px-5 py-4">
                                     <span class="font-semibold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg">
                                         {{ $k->code }}
@@ -100,32 +98,31 @@
                                     {{ $k->phone }}
                                 </td>
 
+                                {{-- STATUS AKTIF / NONAKTIF --}}
                                 <td class="px-5 py-4">
-                                    @if ($k->is_active)
-                                        <span
-                                            class="inline-flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-xs font-semibold">
-                                            <span class="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                                            Aktif
-                                        </span>
-                                    @else
-                                        <span
-                                            class="inline-flex items-center gap-1.5 bg-red-50 text-red-700 px-3 py-1.5 rounded-full text-xs font-semibold">
-                                            <span class="w-1.5 h-1.5 bg-red-600 rounded-full"></span>
-                                            Nonaktif
-                                        </span>
-                                    @endif
+                                    @php
+                                        $badgeStyle = $k->is_active
+                                            ? 'bg-green-50 text-green-700'
+                                            : 'bg-red-50 text-red-700';
+                                        $dotStyle = $k->is_active ? 'bg-green-600' : 'bg-red-600';
+                                    @endphp
+
+                                    <span
+                                        class="inline-flex items-center gap-1.5 {{ $badgeStyle }} px-3 py-1.5 rounded-full text-xs font-semibold">
+                                        <span class="w-1.5 h-1.5 {{ $dotStyle }} rounded-full"></span>
+                                        {{ $k->is_active ? 'Aktif' : 'Nonaktif' }}
+                                    </span>
                                 </td>
 
-                                @if (auth()->user()->role === 'admin')
+                                @if ($isAdmin)
                                     <td class="px-5 py-4">
                                         <div class="flex flex-col gap-3 min-w-48">
 
-                                            {{-- Aktif / Nonaktif --}}
+                                            {{-- Ubah Status Aktif / Nonaktif --}}
                                             <form method="POST"
                                                 action="{{ url('/kurir/' . $k->id . ($k->is_active ? '/nonaktif' : '/aktif')) }}"
                                                 onsubmit="return confirm('Yakin ingin mengubah status kurir ini?')">
                                                 @csrf
-
                                                 <button type="submit"
                                                     class="inline-flex items-center gap-1.5 text-xs font-semibold {{ $k->is_active ? 'text-red-600 hover:text-red-800' : 'text-green-700 hover:text-green-900' }}">
                                                     <i data-lucide="{{ $k->is_active ? 'user-x' : 'user-check' }}"
@@ -134,12 +131,11 @@
                                                 </button>
                                             </form>
 
-                                            {{-- Reset Password --}}
+                                            {{-- Reset Password Kurir --}}
                                             <form method="POST" action="{{ url('/kurir/' . $k->id . '/reset') }}"
                                                 class="flex items-center gap-2"
                                                 onsubmit="return confirm('Yakin ingin mereset password kurir ini?')">
                                                 @csrf
-
                                                 <input type="password" name="password" placeholder="Password baru"
                                                     minlength="8" required
                                                     class="w-36 border border-slate-300 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
@@ -161,19 +157,15 @@
                                         </a>
                                     </td>
                                 @endif
-
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ auth()->user()->role === 'admin' ? 6 : 4 }}"
-                                    class="px-5 py-12 text-center">
+                                <td colspan="{{ $isAdmin ? 6 : 4 }}" class="px-5 py-12 text-center">
                                     <div class="flex flex-col items-center">
                                         <div class="bg-slate-100 p-4 rounded-full mb-3">
                                             <i data-lucide="users" class="w-8 h-8 text-slate-400"></i>
                                         </div>
-                                        <p class="font-semibold text-slate-700">
-                                            Belum Ada Data Kurir
-                                        </p>
+                                        <p class="font-semibold text-slate-700">Belum Ada Data Kurir</p>
                                         <p class="text-xs text-slate-400 mt-1">
                                             Data kurir akan muncul di halaman ini.
                                         </p>
@@ -184,7 +176,6 @@
                     </tbody>
                 </table>
             </div>
-
         </div>
     </div>
 
@@ -192,4 +183,3 @@
         if (window.lucide) lucide.createIcons();
     </script>
 @endsection
-```
