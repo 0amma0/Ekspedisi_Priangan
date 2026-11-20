@@ -1,5 +1,4 @@
-
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -10,7 +9,7 @@ import {
   IonTextarea,
   IonButton,
   IonBadge,
-  IonList
+  IonList,
 } from '@ionic/angular';
 
 import { App } from '@capacitor/app';
@@ -35,12 +34,11 @@ import { PluginListenerHandle } from '@capacitor/core';
   ],
 })
 export class KurirPage implements OnInit, OnDestroy {
-
   // =====================================
   // KONFIGURASI API
   // =====================================
 
-  base = localStorage.getItem('base') || 'http://10.0.2.2:8000/api';
+  base = 'http://192.168.1.8:8000/api';
   token = localStorage.getItem('token') || '';
 
   halaman: string = this.token ? 'paket' : 'login';
@@ -82,6 +80,9 @@ export class KurirPage implements OnInit, OnDestroy {
   sedangSimpanReset: boolean = false;
 
   private appUrlListener?: PluginListenerHandle;
+  private lastProcessedUrl = '';
+  private zone = inject(NgZone);
+  private cdr = inject(ChangeDetectorRef);
 
   // =====================================
   // DATA PAKET
@@ -105,28 +106,34 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   async ngOnInit() {
-
     try {
+      // Pastikan tidak ada listener ganda
+      if (this.appUrlListener) {
+        await this.appUrlListener.remove();
+        this.appUrlListener = undefined;
+      }
 
-      // Menerima link ketika aplikasi sedang terbuka
-      this.appUrlListener = await App.addListener(
-        'appUrlOpen',
-        (event) => {
+      // 1. Menerima deep link ketika aplikasi sedang berjalan (background/foreground)
+      this.appUrlListener = await App.addListener('appUrlOpen', (event) => {
+        if (!event?.url) return;
+
+        this.zone.run(() => {
+          console.log('Deep link diterima (appUrlOpen):', event.url);
           this.prosesLinkReset(event.url);
-        }
-      );
+        });
+      });
 
-      // Menerima link ketika aplikasi dibuka dari kondisi tertutup
+      // 2. Menerima deep link ketika aplikasi dibuka dari kondisi tertutup (cold start)
       const launch = await App.getLaunchUrl();
 
       if (launch?.url) {
-        this.prosesLinkReset(launch.url);
+        this.zone.run(() => {
+          console.log('Launch URL diterima (getLaunchUrl):', launch.url);
+          this.prosesLinkReset(launch.url);
+        });
       }
-
     } catch (error) {
-
       console.error('Gagal memasang listener Deep Link:', error);
-
     }
 
     if (this.token && this.halaman !== 'reset-password') {
@@ -139,44 +146,61 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   prosesLinkReset(url: string) {
+    if (!url) return;
+
+    // Cegah pemrosesan deep link yang sama secara berulang
+    if (this.lastProcessedUrl === url && this.halaman === 'reset-password') {
+      return;
+    }
 
     try {
-
       const parsed = new URL(url);
 
-      if (
-        parsed.protocol !== 'priangankilat:' ||
-        parsed.hostname !== 'reset-password'
-      ) {
+      // Validasi scheme priangankilat://
+      if (parsed.protocol !== 'priangankilat:') {
         return;
       }
 
-      this.tokenReset = parsed.searchParams.get('token') || '';
-      this.emailReset = parsed.searchParams.get('email') || '';
+      // Tangani priangankilat://reset-password?... maupun priangankilat:///reset-password?...
+      const host = parsed.hostname.toLowerCase();
+      const path = parsed.pathname.replace(/^\/+/, '').toLowerCase();
+      const isResetRoute = host === 'reset-password' || (!host && path === 'reset-password');
 
-      if (!this.tokenReset || !this.emailReset) {
-
-        this.info = 'Tautan reset tidak valid. Silakan minta tautan baru.';
-        this.halaman = 'reset-password';
-
+      if (!isResetRoute) {
         return;
       }
 
+      const tokenParam = (parsed.searchParams.get('token') || '').trim();
+      const emailParam = (parsed.searchParams.get('email') || '').trim();
+
+      this.lastProcessedUrl = url;
       this.passwordReset = '';
       this.konfirmasiReset = '';
-      this.info = '';
 
+      if (!tokenParam || !emailParam) {
+        this.tokenReset = '';
+        this.emailReset = emailParam;
+        this.info = 'Tautan reset tidak valid atau parameter tidak lengkap. Silakan minta tautan baru.';
+        this.halaman = 'reset-password';
+        this.cdr.detectChanges();
+        return;
+      }
+
+      // Isi variabel reset password dan langsung tampilkan halaman reset-password
+      this.tokenReset = tokenParam;
+      this.emailReset = emailParam;
+      this.info = '';
       this.halaman = 'reset-password';
 
-      console.log('Deep Link reset password berhasil diterima.');
+      // Paksa Angular/Ionic memperbarui tampilan secara langsung tanpa interaksi textfield
+      this.cdr.detectChanges();
+
+      console.log('Deep Link reset password berhasil diproses.');
       console.log('Email reset:', this.emailReset);
-
     } catch (error) {
-
       console.error('Gagal membaca link reset:', error);
-
       this.info = 'Tautan reset tidak valid.';
-
+      this.cdr.detectChanges();
     }
   }
 
@@ -185,22 +209,17 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   ngOnDestroy() {
-
-    this.appUrlListener?.remove();
-
+    if (this.appUrlListener) {
+      this.appUrlListener.remove();
+      this.appUrlListener = undefined;
+    }
   }
 
   // =====================================
   // KONEKSI API
   // =====================================
 
-  async api(
-    path: string,
-    method = 'GET',
-    body: any = null,
-    gunakanToken = true
-  ) {
-
+  async api(path: string, method = 'GET', body: any = null, gunakanToken = true) {
     const headers: any = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -214,18 +233,18 @@ export class KurirPage implements OnInit, OnDestroy {
     let res: Response;
 
     try {
-
       res = await fetch(this.base + path, {
         method,
         headers,
         body: body ? JSON.stringify(body) : null,
       });
-
     } catch (error) {
-
       console.error('Koneksi API gagal:', error);
 
-      this.info = 'Tidak dapat terhubung ke server. Periksa alamat server API.';
+      this.zone.run(() => {
+        this.info = 'Tidak dapat terhubung ke server. Periksa alamat server API.';
+        this.cdr.detectChanges();
+      });
 
       return null;
     }
@@ -237,26 +256,30 @@ export class KurirPage implements OnInit, OnDestroy {
     console.log('Respons:', data);
 
     if (res.status === 401 && gunakanToken && this.token) {
-
-      this.keluarLokal();
-
-      this.info = 'Sesi berakhir, silakan masuk lagi.';
+      this.zone.run(() => {
+        this.keluarLokal();
+        this.info = 'Sesi berakhir, silakan masuk lagi.';
+        this.cdr.detectChanges();
+      });
 
       return null;
     }
 
     if (res.status === 403 && data.code === 'must_change_password') {
-
-      this.halaman = 'ganti';
-
-      this.info = data.message;
+      this.zone.run(() => {
+        this.halaman = 'ganti';
+        this.info = data.message;
+        this.cdr.detectChanges();
+      });
 
       return null;
     }
 
     if (!res.ok) {
-
-      this.info = data.message || 'Terjadi kesalahan pada server.';
+      this.zone.run(() => {
+        this.info = data.message || 'Terjadi kesalahan pada server.';
+        this.cdr.detectChanges();
+      });
 
       return null;
     }
@@ -269,13 +292,11 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   keluarLokal() {
-
     this.token = '';
 
     localStorage.removeItem('token');
 
     this.halaman = 'login';
-
   }
 
   // =====================================
@@ -283,7 +304,6 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   pindah(h: string) {
-
     this.info = '';
 
     this.halaman = h;
@@ -299,6 +319,8 @@ export class KurirPage implements OnInit, OnDestroy {
     if (h === 'akun') {
       this.muatAkun();
     }
+
+    this.cdr.detectChanges();
   }
 
   // =====================================
@@ -306,11 +328,9 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   async masuk() {
-
     this.info = '';
 
     if (!this.akun.trim() || !this.password) {
-
       this.info = 'Kode kurir dan password wajib diisi.';
 
       return;
@@ -318,10 +338,15 @@ export class KurirPage implements OnInit, OnDestroy {
 
     localStorage.setItem('base', this.base);
 
-    const d = await this.api('/login', 'POST', {
-      akun: this.akun.trim(),
-      password: this.password,
-    }, false);
+    const d = await this.api(
+      '/login',
+      'POST',
+      {
+        akun: this.akun.trim(),
+        password: this.password,
+      },
+      false,
+    );
 
     if (!d) return;
 
@@ -332,15 +357,11 @@ export class KurirPage implements OnInit, OnDestroy {
     this.password = '';
 
     if (d.must_change_password) {
-
       this.halaman = 'ganti';
 
       this.info = 'Silakan ganti password terlebih dahulu.';
-
     } else {
-
       this.pindah('paket');
-
     }
   }
 
@@ -349,20 +370,17 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   async kirimResetPassword() {
-
     if (this.sedangKirimReset) return;
 
     this.info = '';
 
     if (!this.akun.trim()) {
-
       this.info = 'Kode kurir wajib diisi.';
 
       return;
     }
 
     if (!this.emailReset.trim()) {
-
       this.info = 'Email wajib diisi.';
 
       return;
@@ -371,38 +389,45 @@ export class KurirPage implements OnInit, OnDestroy {
     const email = this.emailReset.trim();
 
     this.sedangKirimReset = true;
+    this.cdr.detectChanges();
 
     try {
-
       console.log('Mengirim permintaan reset password...');
       console.log('Alamat API:', this.base + '/password/forgot');
       console.log('Kode kurir:', this.akun.trim());
       console.log('Email:', email);
 
-      const d = await this.api('/password/forgot', 'POST', {
-        akun: this.akun.trim(),
-        email: email,
-      }, false);
+      const d = await this.api(
+        '/password/forgot',
+        'POST',
+        {
+          akun: this.akun.trim(),
+          email: email,
+        },
+        false,
+      );
 
       console.log('Hasil reset password:', d);
 
       if (!d) return;
 
-      // Pop-up konfirmasi berhasil
-      alert(
-        'Tautan reset password berhasil dikirim!\n\nSilakan cek email kamu melalui Mailpit.'
-      );
+      // Reset cache URL terakhir agar tautan baru dari email berikutnya tetap diproses
+      this.lastProcessedUrl = '';
 
+      setTimeout(() => {
+        alert('Tautan reset password berhasil dikirim!\n\nSilakan cek email kamu melalui Mailpit.');
+      }, 100);
     } catch (error) {
-
       console.error('Gagal mengirim tautan reset:', error);
 
-      this.info = 'Gagal mengirim tautan reset. Silakan coba lagi.';
-
+      this.zone.run(() => {
+        this.info = 'Gagal mengirim tautan reset. Silakan coba lagi.';
+      });
     } finally {
-
-      this.sedangKirimReset = false;
-
+      this.zone.run(() => {
+        this.sedangKirimReset = false;
+        this.cdr.detectChanges();
+      });
     }
   }
 
@@ -411,86 +436,93 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   async simpanResetPassword() {
-
     if (this.sedangSimpanReset) return;
 
     this.info = '';
 
     if (!this.tokenReset || !this.emailReset) {
-
       this.info = 'Tautan reset tidak valid. Silakan minta tautan baru.';
-
+      this.cdr.detectChanges();
       return;
     }
 
     if (!this.passwordReset || !this.konfirmasiReset) {
-
       this.info = 'Semua kolom password wajib diisi.';
-
+      this.cdr.detectChanges();
       return;
     }
 
     if (this.passwordReset.length < 8) {
-
       this.info = 'Password baru minimal 8 karakter.';
-
+      this.cdr.detectChanges();
       return;
     }
 
     if (this.passwordReset !== this.konfirmasiReset) {
-
       this.info = 'Konfirmasi password tidak sama.';
-
+      this.cdr.detectChanges();
       return;
     }
 
     this.sedangSimpanReset = true;
+    this.cdr.detectChanges();
 
     try {
+      const d = await this.api(
+        '/password/reset',
+        'POST',
+        {
+          email: this.emailReset,
+          token: this.tokenReset,
+          password: this.passwordReset,
+          password_confirmation: this.konfirmasiReset,
+        },
+        false,
+      );
 
-      const d = await this.api('/password/reset', 'POST', {
-
-        email: this.emailReset,
-
-        token: this.tokenReset,
-
-        password: this.passwordReset,
-
-        password_confirmation: this.konfirmasiReset,
-
-      }, false);
+      console.log('HASIL RESET:', d);
 
       if (!d) return;
 
-      // Bersihkan token login lama
-      this.token = '';
+      const pesanSukses = d.message || 'Password berhasil direset. Silakan login kembali.';
 
-      localStorage.removeItem('token');
+      // Perbarui state di dalam NgZone dan render halaman login terlebih dahulu sebelum alert()
+      this.zone.run(() => {
+        // Bersihkan token login lama
+        this.token = '';
+        localStorage.removeItem('token');
 
-      // Bersihkan data reset password
-      this.tokenReset = '';
-      this.passwordReset = '';
-      this.konfirmasiReset = '';
-      this.emailReset = '';
+        // Bersihkan data reset password
+        this.tokenReset = '';
+        this.passwordReset = '';
+        this.konfirmasiReset = '';
+        this.emailReset = '';
+        this.lastProcessedUrl = '';
 
-      // Kembali ke halaman login
-      this.halaman = 'login';
+        // Ubah halaman ke login dan tampilkan pesan sukses
+        this.halaman = 'login';
+        this.info = pesanSukses;
+        this.sedangSimpanReset = false;
 
-      // Pop-up berhasil reset
-      alert(
-        d.message || 'Password berhasil direset. Silakan login kembali.'
-      );
+        // Paksa Angular/Ionic memperbarui tampilan ke halaman login seketika
+        this.cdr.detectChanges();
+      });
 
+      // Tunda alert agar tidak memblokir proses render perpindahan halaman ke 'login'
+      setTimeout(() => {
+        alert(pesanSukses);
+      }, 150);
     } catch (error) {
-
       console.error('Gagal menyimpan password baru:', error);
 
-      this.info = 'Gagal menyimpan password baru. Silakan coba lagi.';
-
+      this.zone.run(() => {
+        this.info = 'Gagal menyimpan password baru. Silakan coba lagi.';
+      });
     } finally {
-
-      this.sedangSimpanReset = false;
-
+      this.zone.run(() => {
+        this.sedangSimpanReset = false;
+        this.cdr.detectChanges();
+      });
     }
   }
 
@@ -499,38 +531,32 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   async ganti() {
-
     this.info = '';
 
     if (!this.lama || !this.baru || !this.konfirmasi) {
-
       this.info = 'Semua kolom password wajib diisi.';
 
       return;
     }
 
     if (this.baru.length < 8) {
-
       this.info = 'Password baru minimal 8 karakter.';
 
       return;
     }
 
     if (this.baru !== this.konfirmasi) {
-
       this.info = 'Konfirmasi password tidak sama.';
 
       return;
     }
 
     const d = await this.api('/password', 'POST', {
-
       password_lama: this.lama,
 
       password_baru: this.baru,
 
       password_baru_confirmation: this.konfirmasi,
-
     });
 
     if (!d) return;
@@ -549,7 +575,6 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   async muatPaket() {
-
     const d = await this.api('/paket');
 
     if (d) {
@@ -558,7 +583,6 @@ export class KurirPage implements OnInit, OnDestroy {
   }
 
   buka(p: any) {
-
     this.dipilih = p;
 
     this.catatan = '';
@@ -569,22 +593,18 @@ export class KurirPage implements OnInit, OnDestroy {
   }
 
   async kirim(hasil: string) {
-
     this.info = '';
 
     if (hasil === 'Gagal Kirim' && !this.catatan.trim()) {
-
       this.info = 'Catatan wajib diisi untuk Gagal Kirim.';
 
       return;
     }
 
     const d = await this.api('/paket/' + this.dipilih.id + '/hasil', 'POST', {
-
       hasil,
 
       catatan: this.catatan,
-
     });
 
     if (!d) return;
@@ -599,7 +619,6 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   async muatCod() {
-
     const d = await this.api('/cod');
 
     if (d) {
@@ -612,7 +631,6 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   async muatAkun() {
-
     const d = await this.api('/akun');
 
     if (d) {
@@ -621,13 +639,10 @@ export class KurirPage implements OnInit, OnDestroy {
   }
 
   async simpanEmail() {
-
     this.info = '';
 
     const d = await this.api('/akun/email', 'PUT', {
-
       email: this.email.trim() || null,
-
     });
 
     if (!d) return;
@@ -642,12 +657,10 @@ export class KurirPage implements OnInit, OnDestroy {
   // =====================================
 
   async keluar() {
-
     await this.api('/logout', 'POST');
 
     this.keluarLokal();
 
     this.info = 'Anda berhasil keluar.';
   }
-
 }
